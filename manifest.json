@@ -1,11 +1,11 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
-	"version": "1.0.0",
+	"id": "note-metrics",
+	"name": "Daily Note Metrics",
+	"version": "1.1.0",
 	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"description": "Parses your Daily Notes to track habits and tasks and displays interactive charts in a custom dashboard view.",
+	"author": "Andre-Diamond",
+	"authorUrl": "https://yourwebsite.com",
+	"fundingUrl": "https://buymeacoffee.com/yourname",
 	"isDesktopOnly": false
 }
