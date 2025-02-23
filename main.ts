@@ -1,3 +1,4 @@
+// main.ts
 import {
 	App,
 	Editor,

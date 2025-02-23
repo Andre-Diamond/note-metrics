@@ -1,3 +1,4 @@
+// ../components/ChartComponent.ts
 import { Chart, registerables } from 'chart.js';
 Chart.register(...registerables);
 

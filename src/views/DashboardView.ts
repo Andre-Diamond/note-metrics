@@ -1,12 +1,12 @@
+// ..src/views/DashboardView.ts
 import { ItemView, WorkspaceLeaf, Plugin } from 'obsidian';
 import { ChartComponent } from '../components/ChartComponent';
-import { parseDailyNotes } from '../data/dataParser';
+import { getAvailablePeriods, parsePeriodNotes } from '../data/dataParser';
 
 export const VIEW_TYPE_DASHBOARD = "dashboard-view";
 
 export class DashboardView extends ItemView {
 	plugin: Plugin;
-	chartComponent: ChartComponent | null = null;
 
 	constructor(leaf: WorkspaceLeaf, plugin: Plugin) {
 		super(leaf);
@@ -18,37 +18,102 @@ export class DashboardView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return "Dashboard";
+		return "Daily Note Dashboard";
 	}
 
 	async onOpen() {
 		const container = this.containerEl.children[1];
 		container.empty();
-		container.createEl('h2', { text: "Daily Notes Dashboard" });
+		container.createEl('h2', { text: "Daily Note Dashboard" });
 
-		// Create a container for the chart.
-		const chartContainer = container.createDiv({ cls: "chart-container" });
+		// Create a dropdown for period type selection.
+		const periodTypeSelector = container.createEl('select', { cls: 'period-type-selector' });
+		(['weekly', 'monthly', 'yearly'] as const).forEach(type => {
+			const option = periodTypeSelector.createEl('option', { text: type });
+			option.value = type;
+		});
+		periodTypeSelector.value = 'weekly';
 
-		// Parse Daily Notes (e.g., habit counts, tag counts).
-		const chartData = await parseDailyNotes(this.plugin);
+		// Create a second dropdown for selecting the specific period.
+		const periodSelector = container.createEl('select', { cls: 'period-selector' });
 
-		// Prepare data for Chart.js.
-		const data = {
-			labels: chartData.labels,
-			datasets: [
-				{
-					label: 'Habit Completion',
-					data: chartData.habitData,
-					backgroundColor: 'rgba(75, 192, 192, 0.6)',
-				},
-			],
+		// Populate periodSelector based on the selected period type.
+		const populatePeriodSelector = async () => {
+			periodSelector.empty();
+			const periodType = periodTypeSelector.value as 'weekly' | 'monthly' | 'yearly';
+			const availablePeriods = await getAvailablePeriods(this.plugin, periodType);
+			availablePeriods.forEach(period => {
+				const option = periodSelector.createEl('option', { text: period });
+				option.value = period;
+			});
+			if (availablePeriods.length > 0) {
+				periodSelector.value = availablePeriods[availablePeriods.length - 1];
+			}
 		};
 
-		// Initialize the chart.
-		this.chartComponent = new ChartComponent(chartContainer, data, { responsive: true });
+		await populatePeriodSelector();
+
+		// Containers for the charts.
+		const checkboxChartContainer = container.createDiv({ cls: "checkbox-chart-container" });
+		const tagChartsContainer = container.createDiv({ cls: "tag-charts-container" });
+
+		// Function to update charts based on the selected period.
+		const updateCharts = async () => {
+			checkboxChartContainer.empty();
+			tagChartsContainer.empty();
+
+			const periodType = periodTypeSelector.value as 'weekly' | 'monthly' | 'yearly';
+			const periodKey = periodSelector.value;
+			const periodData = await parsePeriodNotes(this.plugin, periodType, periodKey);
+
+			// Checkbox Habit Chart: Grouped by habit (only if data exists).
+			const habits = Object.keys(periodData.checkboxHabits).sort((a, b) => a.localeCompare(b));
+			if (habits.length > 0) {
+				const counts = habits.map(habit => periodData.checkboxHabits[habit]);
+				const checkboxChartData = {
+					labels: habits,
+					datasets: [{
+						label: 'Checkbox Habit Completions',
+						data: counts,
+						backgroundColor: 'rgba(153, 102, 255, 0.6)',
+					}],
+				};
+				new ChartComponent(checkboxChartContainer, checkboxChartData, { responsive: true });
+			}
+
+			// Create a chart for each tag group.
+			for (const group in periodData.tagData) {
+				const groupData = periodData.tagData[group];
+				const groupChartContainer = tagChartsContainer.createDiv({ cls: "chart-container" });
+				groupChartContainer.createEl('h3', { text: `${group} tags` });
+				const items = Object.keys(groupData).sort((a, b) => a.localeCompare(b));
+				const itemCounts = items.map(item => groupData[item]);
+				const tagChartData = {
+					labels: items,
+					datasets: [{
+						label: `${group} Tag Counts`,
+						data: itemCounts,
+						backgroundColor: 'rgba(75, 192, 192, 0.6)',
+					}],
+				};
+				new ChartComponent(groupChartContainer, tagChartData, { responsive: true });
+			}
+		};
+
+		// Initial chart load.
+		await updateCharts();
+
+		// Update charts when either dropdown changes.
+		periodTypeSelector.addEventListener('change', async () => {
+			await populatePeriodSelector();
+			await updateCharts();
+		});
+		periodSelector.addEventListener('change', async () => {
+			await updateCharts();
+		});
 	}
 
 	async onClose() {
-		// Cleanup logic if needed.
+		// Cleanup if needed.
 	}
 }
