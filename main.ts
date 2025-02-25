@@ -47,18 +47,9 @@ export default class NoteMetricsPlugin extends Plugin {
 		// Add a settings tab for your plugin.
 		this.addSettingTab(new NoteMetricsSettingTab(this.app, this));
 
-		// Sample global DOM event.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			console.log('click', evt);
-		});
-
-		// Sample interval registration.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
 	}
 
 	onunload() {
-		// Detach the dashboard view if open.
-		this.app.workspace.detachLeavesOfType(VIEW_TYPE_DASHBOARD);
 	}
 
 	async loadSettings() {
@@ -70,7 +61,7 @@ export default class NoteMetricsPlugin extends Plugin {
 	}
 
 	async activateDashboardView() {
-		// Detach existing dashboard leaves.
+		// Detach existing dashboard leaves before activating a new one.
 		this.app.workspace.detachLeavesOfType(VIEW_TYPE_DASHBOARD);
 		// Create a new right sidebar leaf for the dashboard.
 		const rightLeaf = this.app.workspace.getRightLeaf(false);
@@ -80,10 +71,11 @@ export default class NoteMetricsPlugin extends Plugin {
 				active: true,
 			});
 		}
-		// Reveal the dashboard.
-		this.app.workspace.revealLeaf(
-			this.app.workspace.getLeavesOfType(VIEW_TYPE_DASHBOARD)[0]
-		);
+		// Reveal the dashboard if it exists.
+		const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_DASHBOARD);
+		if (leaves.length > 0) {
+			this.app.workspace.revealLeaf(leaves[0]);
+		}
 	}
 }
 
