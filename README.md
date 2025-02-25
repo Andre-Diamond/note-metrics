@@ -46,3 +46,6 @@ Contributions are welcome! Feel free to submit pull requests or report issues on
 ## License
 
 This plugin is released under the MIT License.
+
+This plugin uses [Chart.js](https://www.chartjs.org/) (licensed under the MIT License) for rendering interactive charts.
+
