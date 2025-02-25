@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-note-metrics",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"description": "A plugin to parse Daily Notes and display interactive charts for habit tracking in Obsidian.",
 	"main": "main.js",
 	"scripts": {

@@ -5,7 +5,10 @@
 	"minAppVersion": "0.15.0",
 	"description": "Parses your Daily Notes to track habits and tasks and displays interactive charts in a custom dashboard view.",
 	"author": "Andre-Diamond",
-	"authorUrl": "https://yourwebsite.com",
-	"fundingUrl": "https://buymeacoffee.com/yourname",
+	"authorUrl": "https://github.com/Andre-Diamond",
+	"fundingUrl": {
+        "cardanoWalletHandle": "$mainwallet",
+        "LinkedIn": "https://www.linkedin.com/in/andr%C3%A9-diamond-45871242/"
+    },
 	"isDesktopOnly": false
 }
