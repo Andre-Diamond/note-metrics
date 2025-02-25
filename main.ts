@@ -4,7 +4,6 @@ import {
 	Editor,
 	MarkdownView,
 	Modal,
-	Notice,
 	Plugin,
 	PluginSettingTab,
 	Setting,
@@ -26,9 +25,8 @@ export default class MyPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
-		// Sample ribbon icon
-		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
-			new Notice('This is a notice!');
+		const ribbonIconEl = this.addRibbonIcon('dice', 'Daily Note Dashboard', (evt: MouseEvent) => {
+			this.activateDashboardView();
 		});
 		ribbonIconEl.addClass('my-plugin-ribbon-class');
 

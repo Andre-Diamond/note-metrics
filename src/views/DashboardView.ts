@@ -1,5 +1,5 @@
 // ..src/views/DashboardView.ts
-import { ItemView, WorkspaceLeaf, Plugin } from 'obsidian';
+import { ItemView, WorkspaceLeaf, Plugin, Notice } from 'obsidian';
 import { ChartComponent } from '../components/ChartComponent';
 import { getAvailablePeriods, parsePeriodNotes } from '../data/dataParser';
 
@@ -52,6 +52,16 @@ export class DashboardView extends ItemView {
 		};
 
 		await populatePeriodSelector();
+
+		// **** Refresh Button ****
+		const refreshButton = container.createEl('button', { text: 'Refresh Data' });
+		refreshButton.addClass('refresh-button');
+		refreshButton.addEventListener('click', async () => {
+			await updateCharts();
+			new Notice('Dashboard refreshed!');
+		});
+
+		// **************************
 
 		// Containers for the charts.
 		const checkboxChartContainer = container.createDiv({ cls: "checkbox-chart-container" });
