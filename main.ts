@@ -1,9 +1,6 @@
 // main.ts
 import {
 	App,
-	Editor,
-	MarkdownView,
-	Modal,
 	Plugin,
 	PluginSettingTab,
 	Setting,
@@ -11,16 +8,16 @@ import {
 } from 'obsidian';
 import { DashboardView, VIEW_TYPE_DASHBOARD } from './src/views/DashboardView';
 
-interface MyPluginSettings {
+interface NoteMetricsSettings {
 	mySetting: string;
 }
 
-const DEFAULT_SETTINGS: MyPluginSettings = {
+const DEFAULT_SETTINGS: NoteMetricsSettings = {
 	mySetting: 'default'
 }
 
 export default class NoteMetricsPlugin extends Plugin {
-	settings: MyPluginSettings;
+	settings: NoteMetricsSettings;
 
 	async onload() {
 		await this.loadSettings();
@@ -33,36 +30,6 @@ export default class NoteMetricsPlugin extends Plugin {
 		// Sample status bar item
 		const statusBarItemEl = this.addStatusBarItem();
 		statusBarItemEl.setText('Status Bar Text');
-
-		// Sample command for a modal
-		this.addCommand({
-			id: 'open-sample-modal-simple',
-			name: 'Open sample modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
-			}
-		});
-		this.addCommand({
-			id: 'sample-editor-command',
-			name: 'Sample editor command',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				console.log(editor.getSelection());
-				editor.replaceSelection('Sample Editor Command');
-			}
-		});
-		this.addCommand({
-			id: 'open-sample-modal-complex',
-			name: 'Open sample modal (complex)',
-			checkCallback: (checking: boolean) => {
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
-					return true;
-				}
-			}
-		});
 
 		// Register the new Dashboard view.
 		this.registerView(
@@ -78,7 +45,7 @@ export default class NoteMetricsPlugin extends Plugin {
 		});
 
 		// Add a settings tab for your plugin.
-		this.addSettingTab(new SampleSettingTab(this.app, this));
+		this.addSettingTab(new NoteMetricsSettingTab(this.app, this));
 
 		// Sample global DOM event.
 		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
@@ -120,23 +87,7 @@ export default class NoteMetricsPlugin extends Plugin {
 	}
 }
 
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
-
-	onOpen() {
-		const { contentEl } = this;
-		contentEl.setText('Woah!');
-	}
-
-	onClose() {
-		const { contentEl } = this;
-		contentEl.empty();
-	}
-}
-
-class SampleSettingTab extends PluginSettingTab {
+class NoteMetricsSettingTab extends PluginSettingTab {
 	plugin: NoteMetricsPlugin;
 
 	constructor(app: App, plugin: NoteMetricsPlugin) {
