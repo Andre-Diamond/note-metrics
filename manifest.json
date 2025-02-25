@@ -3,7 +3,7 @@
 	"name": "Daily Note Metrics",
 	"version": "1.1.0",
 	"minAppVersion": "0.15.0",
-	"description": "Parses your Daily Notes to track habits and tasks and displays interactive charts in a custom dashboard view.",
+	"description": "Parses the tags in your Daily Notes to create interactive charts in a dashboard view.",
 	"author": "Andre-Diamond",
 	"authorUrl": "https://github.com/Andre-Diamond",
 	"fundingUrl": {
