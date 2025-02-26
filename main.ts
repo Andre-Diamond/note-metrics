@@ -9,11 +9,13 @@ import {
 import { DashboardView, VIEW_TYPE_DASHBOARD } from './src/views/DashboardView';
 
 interface NoteMetricsSettings {
-	mySetting: string;
+	// Setting: list of folders to scan.
+	folders: string[];
 }
 
 const DEFAULT_SETTINGS: NoteMetricsSettings = {
-	mySetting: 'default'
+	// Default folder is the Daily Notes folder.
+	folders: ['Daily Notes']
 }
 
 export default class NoteMetricsPlugin extends Plugin {
@@ -22,14 +24,10 @@ export default class NoteMetricsPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
-		const ribbonIconEl = this.addRibbonIcon('dice', 'Daily Note Dashboard', (evt: MouseEvent) => {
+		const ribbonIconEl = this.addRibbonIcon('bar-chart', 'Daily Note Dashboard', (evt: MouseEvent) => {
 			this.activateDashboardView();
 		});
 		ribbonIconEl.addClass('my-plugin-ribbon-class');
-
-		// Sample status bar item
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status Bar Text');
 
 		// Register the new Dashboard view.
 		this.registerView(
@@ -46,7 +44,6 @@ export default class NoteMetricsPlugin extends Plugin {
 
 		// Add a settings tab for your plugin.
 		this.addSettingTab(new NoteMetricsSettingTab(this.app, this));
-
 	}
 
 	onunload() {
@@ -91,15 +88,43 @@ class NoteMetricsSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
-			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
-				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
-					await this.plugin.saveSettings();
-				}));
+		// Settings for folder selection.
+		containerEl.createEl('h2', { text: 'Folders to Scan' });
+		const folderContainer = containerEl.createDiv('folder-container');
+
+		const renderFolderInputs = () => {
+			folderContainer.empty();
+			this.plugin.settings.folders.forEach((folder, index) => {
+				const folderDiv = folderContainer.createDiv({ cls: 'folder-input-row' });
+				new Setting(folderDiv)
+					.setName(index === 0 ? 'Default Daily Note Folder' : `Folder ${index + 1}`)
+					.setDesc('Folder to scan for tags and daily habits.')
+					.addText(text => text
+						.setPlaceholder('Enter folder name')
+						.setValue(folder)
+						.onChange(async (value) => {
+							this.plugin.settings.folders[index] = value;
+							await this.plugin.saveSettings();
+						}));
+				// Allow removal of additional folders (but not the default one)
+				if (index > 0) {
+					folderDiv.createEl('button', { text: 'Remove' })
+						.addEventListener('click', async () => {
+							this.plugin.settings.folders.splice(index, 1);
+							await this.plugin.saveSettings();
+							renderFolderInputs();
+						});
+				}
+			});
+		};
+
+		renderFolderInputs();
+
+		containerEl.createEl('button', { text: 'Add Folder' })
+			.addEventListener('click', async () => {
+				this.plugin.settings.folders.push('');
+				await this.plugin.saveSettings();
+				renderFolderInputs();
+			});
 	}
 }

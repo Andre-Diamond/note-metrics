@@ -1,4 +1,4 @@
-// ..src/views/DashboardView.ts
+// ../src/views/DashboardView.ts
 import { ItemView, WorkspaceLeaf, Plugin, Notice } from 'obsidian';
 import { ChartComponent } from '../components/ChartComponent';
 import { getAvailablePeriods, parsePeriodNotes } from '../data/dataParser';
@@ -22,6 +22,7 @@ export class DashboardView extends ItemView {
 	}
 
 	async onOpen() {
+		// Assuming containerEl.children[1] is the main content container.
 		const container = this.containerEl.children[1];
 		container.empty();
 		container.createEl('h2', { text: "Daily Note Dashboard" });
@@ -61,16 +62,16 @@ export class DashboardView extends ItemView {
 			new Notice('Dashboard refreshed!');
 		});
 
-		// **************************
-
 		// Containers for the charts.
 		const checkboxChartContainer = container.createDiv({ cls: "checkbox-chart-container" });
 		const tagChartsContainer = container.createDiv({ cls: "tag-charts-container" });
+		const groupChartContainer = container.createDiv({ cls: "group-chart-container" });
 
 		// Function to update charts based on the selected period.
 		const updateCharts = async () => {
 			checkboxChartContainer.empty();
 			tagChartsContainer.empty();
+			groupChartContainer.empty();
 
 			const periodType = periodTypeSelector.value as 'weekly' | 'monthly' | 'yearly';
 			const periodKey = periodSelector.value;
@@ -91,11 +92,11 @@ export class DashboardView extends ItemView {
 				new ChartComponent(checkboxChartContainer, checkboxChartData, { responsive: true });
 			}
 
-			// Create a chart for each tag group.
+			// Create a chart for each tag group (for combo tags).
 			for (const group in periodData.tagData) {
 				const groupData = periodData.tagData[group];
-				const groupChartContainer = tagChartsContainer.createDiv({ cls: "chart-container" });
-				groupChartContainer.createEl('h3', { text: `${group} tags` });
+				const groupChartDiv = tagChartsContainer.createDiv({ cls: "chart-container" });
+				groupChartDiv.createEl('h3', { text: `${group} tags` });
 				const items = Object.keys(groupData).sort((a, b) => a.localeCompare(b));
 				const itemCounts = items.map(item => groupData[item]);
 				const tagChartData = {
@@ -106,7 +107,23 @@ export class DashboardView extends ItemView {
 						backgroundColor: 'rgba(75, 192, 192, 0.6)',
 					}],
 				};
-				new ChartComponent(groupChartContainer, tagChartData, { responsive: true });
+				new ChartComponent(groupChartDiv, tagChartData, { responsive: true });
+			}
+
+			// **New Group Tags Chart**: Aggregate plain and combo tags.
+			if (Object.keys(periodData.groupTagCounts).length > 0) {
+				groupChartContainer.createEl('h3', { text: "Group Tags" });
+				const groups = Object.keys(periodData.groupTagCounts).sort((a, b) => a.localeCompare(b));
+				const groupCounts = groups.map(group => periodData.groupTagCounts[group]);
+				const groupChartData = {
+					labels: groups,
+					datasets: [{
+						label: 'Group Tag Counts',
+						data: groupCounts,
+						backgroundColor: 'rgba(255, 159, 64, 0.6)',
+					}],
+				};
+				new ChartComponent(groupChartContainer, groupChartData, { responsive: true });
 			}
 		};
 

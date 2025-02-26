@@ -6,6 +6,8 @@ export interface PeriodChartData {
 	checkboxHabits: { [habit: string]: number };
 	// For tags: keys are group names (e.g. habit, goal, work), with each value mapping tag item → count.
 	tagData: { [group: string]: { [tagItem: string]: number } };
+	// New: Aggregate counts for group tags (plain and combo)
+	groupTagCounts: { [group: string]: number };
 }
 
 // Helper: parse a date from a filename assuming "YYYY-MM-DD" at the beginning.
@@ -21,6 +23,16 @@ function parseDateFromFilename(filename: string): Date | null {
 }
 
 /**
+ * Gets the file date by first checking the filename; if not found, uses the file's creation time.
+ * @param file The TFile object.
+ * @returns A Date representing either the parsed date from the filename or the file's creation date.
+ */
+function getFileDate(file: TFile): Date {
+	const parsedDate = parseDateFromFilename(file.basename);
+	return parsedDate || new Date(file.stat.ctime);
+}
+
+/**
  * Aggregates daily note data for a given period.
  * @param plugin The plugin instance.
  * @param periodType 'weekly', 'monthly', or 'yearly'
@@ -33,13 +45,21 @@ export async function parsePeriodNotes(
 	periodKey: string
 ): Promise<PeriodChartData> {
 	const vault = plugin.app.vault;
-	const files = vault.getFiles().filter((file: TFile) => file.path.startsWith("Daily Notes/") && file.path.endsWith(".md"));
+	// Retrieve folders from the plugin settings (fallback to Daily Notes if not set)
+	const folders: string[] = (plugin as any).settings?.folders || ['Daily Notes'];
+
+	// Filter files that are in one of the specified folders and end with ".md"
+	const files = vault.getFiles().filter((file: TFile) =>
+		folders.some(folder => file.path.startsWith(`${folder}/`)) && file.path.endsWith(".md")
+	);
 
 	const checkboxHabits: { [habit: string]: number } = {};
 	const tagData: { [group: string]: { [tagItem: string]: number } } = {};
+	const groupTagCounts: { [group: string]: number } = {};
 
 	for (const file of files) {
-		const fileDate = parseDateFromFilename(file.basename);
+		// Use getFileDate to get the file's date (either from filename or creation time)
+		const fileDate = getFileDate(file);
 		if (!fileDate) continue;
 
 		let include = false;
@@ -71,26 +91,38 @@ export async function parsePeriodNotes(
 			for (const line of lines) {
 				const match = line.match(/- \[x\]\s*(.+)/);
 				if (match) {
-					const habitName = match[1].trim();
+					let habitName = match[1].trim();
+					// Normalize habit names ending with 'Task' followed by a number
+					const taskMatch = habitName.match(/^(.*\bTask)\s+\d+$/i);
+					if (taskMatch) {
+						habitName = taskMatch[1].trim();
+					}
 					checkboxHabits[habitName] = (checkboxHabits[habitName] || 0) + 1;
 				}
 			}
 		}
 
-		// Parse tags of the form "#group/item".
-		const tagRegex = /#([\w-]+)\/([\w-]+)/g;
+		// Parse tags: supports both plain tags (#work) and combo tags (#work/documentation).
+		const tagRegex = /#([\w-]+)(?:\/([\w-]+))?/g;
 		let tagMatch;
 		while ((tagMatch = tagRegex.exec(content)) !== null) {
 			const group = tagMatch[1];
-			const item = tagMatch[2];
-			if (!tagData[group]) {
-				tagData[group] = {};
+			const item = tagMatch[2]; // Will be undefined for plain tags
+
+			// Increment the group tag count (for both plain and combo tags)
+			groupTagCounts[group] = (groupTagCounts[group] || 0) + 1;
+
+			// If a combo tag exists, record it in tagData.
+			if (item) {
+				if (!tagData[group]) {
+					tagData[group] = {};
+				}
+				tagData[group][item] = (tagData[group][item] || 0) + 1;
 			}
-			tagData[group][item] = (tagData[group][item] || 0) + 1;
 		}
 	}
 
-	return { checkboxHabits, tagData };
+	return { checkboxHabits, tagData, groupTagCounts };
 }
 
 /**
@@ -104,11 +136,15 @@ export async function getAvailablePeriods(
 	periodType: 'weekly' | 'monthly' | 'yearly'
 ): Promise<string[]> {
 	const vault = plugin.app.vault;
-	const files = vault.getFiles().filter((file: TFile) => file.path.startsWith("Daily Notes/") && file.path.endsWith(".md"));
+	const folders: string[] = (plugin as any).settings?.folders || ['Daily Notes'];
+
+	const files = vault.getFiles().filter((file: TFile) =>
+		folders.some(folder => file.path.startsWith(`${folder}/`)) && file.path.endsWith(".md")
+	);
 	const periodSet = new Set<string>();
 
 	for (const file of files) {
-		const fileDate = parseDateFromFilename(file.basename);
+		const fileDate = getFileDate(file);
 		if (!fileDate) continue;
 
 		if (periodType === 'weekly') {
