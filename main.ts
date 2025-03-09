@@ -24,7 +24,7 @@ export default class NoteMetricsPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
-		const ribbonIconEl = this.addRibbonIcon('bar-chart', 'Daily Note Dashboard', (evt: MouseEvent) => {
+		const ribbonIconEl = this.addRibbonIcon('bar-chart', 'Daily note dashboard', (evt: MouseEvent) => {
 			this.activateDashboardView();
 		});
 		ribbonIconEl.addClass('my-plugin-ribbon-class');
@@ -38,7 +38,7 @@ export default class NoteMetricsPlugin extends Plugin {
 		// Command to open the Dashboard view.
 		this.addCommand({
 			id: 'open-dashboard',
-			name: 'Open Dashboard',
+			name: 'Open dashboard',
 			callback: () => this.activateDashboardView()
 		});
 
@@ -58,22 +58,24 @@ export default class NoteMetricsPlugin extends Plugin {
 	}
 
 	async activateDashboardView() {
-		// Detach existing dashboard leaves before activating a new one.
-		this.app.workspace.detachLeavesOfType(VIEW_TYPE_DASHBOARD);
-		// Create a new right sidebar leaf for the dashboard.
+		// Check if a dashboard view already exists.
+		const existingLeaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_DASHBOARD);
+		if (existingLeaves.length > 0) {
+			// If found, simply reveal (and focus) on the first one.
+			this.app.workspace.revealLeaf(existingLeaves[0]);
+			return;
+		}
+	
+		// If no dashboard leaf exists, create a new right sidebar leaf.
 		const rightLeaf = this.app.workspace.getRightLeaf(false);
 		if (rightLeaf) {
 			await rightLeaf.setViewState({
 				type: VIEW_TYPE_DASHBOARD,
 				active: true,
 			});
+			this.app.workspace.revealLeaf(rightLeaf);
 		}
-		// Reveal the dashboard if it exists.
-		const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_DASHBOARD);
-		if (leaves.length > 0) {
-			this.app.workspace.revealLeaf(leaves[0]);
-		}
-	}
+	}	
 }
 
 class NoteMetricsSettingTab extends PluginSettingTab {
@@ -89,38 +91,49 @@ class NoteMetricsSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		// Settings for folder selection.
-		containerEl.createEl('h2', { text: 'Folders to Scan' });
+		new Setting(containerEl).setName('Folders to scan').setHeading();
 		const folderContainer = containerEl.createDiv('folder-container');
 
 		const renderFolderInputs = () => {
 			folderContainer.empty();
 			this.plugin.settings.folders.forEach((folder, index) => {
+				// Create a row for each folder input.
 				const folderDiv = folderContainer.createDiv({ cls: 'folder-input-row' });
-				new Setting(folderDiv)
-					.setName(index === 0 ? 'Default Daily Note Folder' : `Folder ${index + 1}`)
+				// Create an inline container for the text input and remove button.
+				const inputContainer = folderDiv.createDiv({ cls: 'input-container' });
+				new Setting(inputContainer)
+					.setName(
+						index === 0
+							? 'Default daily note folder'
+							: `Folder ${index + 1}`
+					)
 					.setDesc('Folder to scan for tags and daily habits.')
-					.addText(text => text
-						.setPlaceholder('Enter folder name')
-						.setValue(folder)
-						.onChange(async (value) => {
-							this.plugin.settings.folders[index] = value;
-							await this.plugin.saveSettings();
-						}));
-				// Allow removal of additional folders (but not the default one)
+					.addText((text) =>
+						text
+							.setPlaceholder('Enter folder name')
+							.setValue(folder)
+							.onChange(async (value) => {
+								this.plugin.settings.folders[index] = value;
+								await this.plugin.saveSettings();
+							})
+					);
+				// For additional folders (not the default), add a remove button.
 				if (index > 0) {
-					folderDiv.createEl('button', { text: 'Remove' })
-						.addEventListener('click', async () => {
-							this.plugin.settings.folders.splice(index, 1);
-							await this.plugin.saveSettings();
-							renderFolderInputs();
-						});
+					const removeBtn = inputContainer.createEl('button', { text: '×' });
+					removeBtn.addClass('small-remove-button');
+					removeBtn.addEventListener('click', async () => {
+						this.plugin.settings.folders.splice(index, 1);
+						await this.plugin.saveSettings();
+						renderFolderInputs();
+					});
 				}
 			});
 		};
 
 		renderFolderInputs();
 
-		containerEl.createEl('button', { text: 'Add Folder' })
+		containerEl
+			.createEl('button', { text: 'Add folder' })
 			.addEventListener('click', async () => {
 				this.plugin.settings.folders.push('');
 				await this.plugin.saveSettings();

@@ -6,9 +6,6 @@
 	"description": "Parses the tags in your Daily Notes to create interactive charts in a dashboard view.",
 	"author": "Andre-Diamond",
 	"authorUrl": "https://github.com/Andre-Diamond",
-	"fundingUrl": {
-        "cardanoWalletHandle": "$mainwallet",
-        "LinkedIn": "https://www.linkedin.com/in/andr%C3%A9-diamond-45871242/"
-    },
+	"fundingUrl":  "https://buymeacoffee.com/signius",
 	"isDesktopOnly": false
 }

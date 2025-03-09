@@ -18,14 +18,14 @@ export class DashboardView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return "Daily Note Dashboard";
+		return "Daily note dashboard";
 	}
 
 	async onOpen() {
 		// Assuming containerEl.children[1] is the main content container.
 		const container = this.containerEl.children[1];
 		container.empty();
-		container.createEl('h2', { text: "Daily Note Dashboard" });
+		container.createEl('h2', { text: "Daily note dashboard" });
 
 		// Create a dropdown for period type selection.
 		const periodTypeSelector = container.createEl('select', { cls: 'period-type-selector' });
@@ -55,7 +55,7 @@ export class DashboardView extends ItemView {
 		await populatePeriodSelector();
 
 		// **** Refresh Button ****
-		const refreshButton = container.createEl('button', { text: 'Refresh Data' });
+		const refreshButton = container.createEl('button', { text: 'Refresh data' });
 		refreshButton.addClass('refresh-button');
 		refreshButton.addEventListener('click', async () => {
 			await updateCharts();
@@ -84,7 +84,7 @@ export class DashboardView extends ItemView {
 				const checkboxChartData = {
 					labels: habits,
 					datasets: [{
-						label: 'Checkbox Habit Completions',
+						label: 'Checkbox habit completions',
 						data: counts,
 						backgroundColor: 'rgba(153, 102, 255, 0.6)',
 					}],
@@ -102,7 +102,7 @@ export class DashboardView extends ItemView {
 				const tagChartData = {
 					labels: items,
 					datasets: [{
-						label: `${group} Tag Counts`,
+						label: `${group} tag counts`,
 						data: itemCounts,
 						backgroundColor: 'rgba(75, 192, 192, 0.6)',
 					}],
@@ -112,13 +112,13 @@ export class DashboardView extends ItemView {
 
 			// **New Group Tags Chart**: Aggregate plain and combo tags.
 			if (Object.keys(periodData.groupTagCounts).length > 0) {
-				groupChartContainer.createEl('h3', { text: "Group Tags" });
+				groupChartContainer.createEl('h3', { text: "Group tags" });
 				const groups = Object.keys(periodData.groupTagCounts).sort((a, b) => a.localeCompare(b));
 				const groupCounts = groups.map(group => periodData.groupTagCounts[group]);
 				const groupChartData = {
 					labels: groups,
 					datasets: [{
-						label: 'Group Tag Counts',
+						label: 'Group tag counts',
 						data: groupCounts,
 						backgroundColor: 'rgba(255, 159, 64, 0.6)',
 					}],

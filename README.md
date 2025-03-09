@@ -17,7 +17,7 @@ The Daily Note Dashboard Plugin aggregates and visualizes your daily note data, 
 
 ## Installation
 
-1. Browse Obsidian plugins for Daily Note Metrics.
+1. Browse Obsidian plugins for Daily note dashboard.
 2. Enable the plugin from Obsidian's Settings under the "Community Plugins" section.
 3. Open the Dashboard view via the command palette or by clicking the designated icon in the ribbon.
 
@@ -25,11 +25,18 @@ The Daily Note Dashboard Plugin aggregates and visualizes your daily note data, 
 
 - **Dashboard:** Once activated, the dashboard displays your aggregated data.
 - **Period Dropdowns:** Use the dropdown menus to select the period type (weekly, monthly, yearly) and the specific period you want to view.
-- **Refresh Data:** Click the **Refresh Data** button to update the charts with the latest data from your Daily Notes.
+- **Refresh Data:** Click the **Refresh data** button to update the charts with the latest data from your Daily Notes.
+
+## Filename and Date Parsing Assumptions
+
+The plugin uses a helper function to parse a date from a daily note's filename. **It assumes that the filename begins with a date in the "YYYY-MM-DD" format.**  
+For example, a file named `2023-04-25 - Daily Note.md` will have its date parsed as April 25, 2023.
+
+If a filename does not start with a date in the expected format, the plugin will fall back to using the file's creation time (as recorded in `file.stat.ctime`). This fallback ensures that a date is always available for aggregation, though it may not always reflect the intended note date. For accurate data parsing, please ensure your daily note filenames follow the "YYYY-MM-DD" naming convention.
 
 ## Daily Habit Checkboxes Example
 
-Below is an example of how you might structure your Daily Habit checkboxes in a Daily Note template:
+The plugin parses habit checkboxes only if they are placed under the **`## Daily Habits`** heading and are formatted as markdown checkboxes. Below is an example of how you might structure your Daily Habit checkboxes in a Daily Note template:
 
 ~~~markdown
 ## Daily Habits
@@ -40,7 +47,7 @@ Below is an example of how you might structure your Daily Habit checkboxes in a 
 - [ ] Community Task 2
 ~~~
 
-*Note:* Using checkboxes for habit tracking is optional. You can also track your habits by simply adding tags to your notes (for example, `#habit/running`).
+*Note:* Habit checkboxes will only be recognized if they are under the "## Daily Habits" heading and follow the proper markdown checkbox syntax. You can also track your habits by simply adding tags to your notes (for example, `#habit/running`).
 
 ## Customization
 
