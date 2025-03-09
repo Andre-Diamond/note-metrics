@@ -2,7 +2,7 @@
 
 The Daily Note Dashboard Plugin aggregates and visualizes your daily note data, allowing you to track your habits and tags over time. It reads checkbox completions from a designated section in your Daily Notes and organizes tag data (e.g., `#habit/running` or `#work/documentation`) into interactive charts.
 
-![dashboard](image.png)
+![dashboard](image-1.png)
 
 ## Features
 
