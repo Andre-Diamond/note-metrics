@@ -17,7 +17,7 @@ The Daily Note Dashboard Plugin aggregates and visualizes your daily note data, 
 
 ## Installation
 
-1. Browse Obsidian plugins for Daily note dashboard.
+1. Browse Obsidian plugins for Daily Note Metrics.
 2. Enable the plugin from Obsidian's Settings under the "Community Plugins" section.
 3. Open the Dashboard view via the command palette or by clicking the designated icon in the ribbon.
 
