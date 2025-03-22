@@ -65,7 +65,7 @@ export default class NoteMetricsPlugin extends Plugin {
 			this.app.workspace.revealLeaf(existingLeaves[0]);
 			return;
 		}
-	
+
 		// If no dashboard leaf exists, create a new right sidebar leaf.
 		const rightLeaf = this.app.workspace.getRightLeaf(false);
 		if (rightLeaf) {
@@ -75,7 +75,7 @@ export default class NoteMetricsPlugin extends Plugin {
 			});
 			this.app.workspace.revealLeaf(rightLeaf);
 		}
-	}	
+	}
 }
 
 class NoteMetricsSettingTab extends PluginSettingTab {
@@ -90,34 +90,32 @@ class NoteMetricsSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		// Settings for folder selection.
-		new Setting(containerEl).setName('Folders to scan').setHeading();
+		// Add the heading using Setting
+		new Setting(containerEl)
+			.setName('Folders to scan')
+			.setDesc('Select folders to scan for tags and daily habits')
+			.setHeading();
+
+		// Container for all folder inputs
 		const folderContainer = containerEl.createDiv('folder-container');
 
 		const renderFolderInputs = () => {
 			folderContainer.empty();
 			this.plugin.settings.folders.forEach((folder, index) => {
-				// Create a row for each folder input.
 				const folderDiv = folderContainer.createDiv({ cls: 'folder-input-row' });
-				// Create an inline container for the text input and remove button.
 				const inputContainer = folderDiv.createDiv({ cls: 'input-container' });
+
 				new Setting(inputContainer)
-					.setName(
-						index === 0
-							? 'Default daily note folder'
-							: `Folder ${index + 1}`
-					)
-					.setDesc('Folder to scan for tags and daily habits.')
 					.addText((text) =>
 						text
-							.setPlaceholder('Enter folder name')
+							.setPlaceholder(index === 0 ? 'Default daily note folder' : 'Enter folder name')
 							.setValue(folder)
 							.onChange(async (value) => {
 								this.plugin.settings.folders[index] = value;
 								await this.plugin.saveSettings();
 							})
 					);
-				// For additional folders (not the default), add a remove button.
+
 				if (index > 0) {
 					const removeBtn = inputContainer.createEl('button', { text: '×' });
 					removeBtn.addClass('small-remove-button');
@@ -132,12 +130,39 @@ class NoteMetricsSettingTab extends PluginSettingTab {
 
 		renderFolderInputs();
 
-		containerEl
-			.createEl('button', { text: 'Add folder' })
-			.addEventListener('click', async () => {
-				this.plugin.settings.folders.push('');
-				await this.plugin.saveSettings();
-				renderFolderInputs();
-			});
+		const addButton = containerEl.createEl('button', { text: 'Add folder' });
+		addButton.addClass('add-folder-button');
+		addButton.addEventListener('click', async () => {
+			this.plugin.settings.folders.push('');
+			await this.plugin.saveSettings();
+			renderFolderInputs();
+		});
+
+		// Add donation section
+		containerEl.createEl('hr');
+
+		new Setting(containerEl)
+			.setName('Support the development')
+			.setDesc('If you find this plugin helpful, consider supporting its development')
+			.setHeading();
+
+		const donationButtons = containerEl.createDiv('donation-buttons');
+		donationButtons.addClass('donation-container');
+
+		const githubButton = donationButtons.createEl('button', {
+			text: 'GitHub Sponsors',
+			cls: 'donation-button github-sponsor'
+		});
+		githubButton.addEventListener('click', () => {
+			window.open('https://github.com/sponsors/Andre-Diamond');
+		});
+
+		const buyMeACoffeeButton = donationButtons.createEl('button', {
+			text: 'Buy Me a Coffee',
+			cls: 'donation-button buymeacoffee'
+		});
+		buyMeACoffeeButton.addEventListener('click', () => {
+			window.open('https://www.buymeacoffee.com/signius');
+		});
 	}
 }

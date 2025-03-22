@@ -17,6 +17,10 @@ export class DashboardView extends ItemView {
 		return VIEW_TYPE_DASHBOARD;
 	}
 
+	getIcon(): string {
+		return "bar-chart";
+	}
+
 	getDisplayText(): string {
 		return "Daily note dashboard";
 	}
@@ -80,6 +84,7 @@ export class DashboardView extends ItemView {
 			// Checkbox Habit Chart: Grouped by habit (only if data exists).
 			const habits = Object.keys(periodData.checkboxHabits).sort((a, b) => a.localeCompare(b));
 			if (habits.length > 0) {
+				checkboxChartContainer.createEl('h3', { text: "Habits" });
 				const counts = habits.map(habit => periodData.checkboxHabits[habit]);
 				const checkboxChartData = {
 					labels: habits,
