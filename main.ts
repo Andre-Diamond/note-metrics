@@ -21,7 +21,7 @@ const DEFAULT_SETTINGS: NoteMetricsSettings = {
 	// Default folder is the Daily Notes folder.
 	folders: ['Daily Notes'],
 	// Default heading is Daily Habits
-	headings: ['# Daily Habits', '## Work Tasks', '### Evening Routine'],
+	headings: ['# Work Tasks', '## Daily Habits', '### Evening Routine'],
 	// Default to false - match exact heading levels
 	ignoreHeadingLevels: false
 }
