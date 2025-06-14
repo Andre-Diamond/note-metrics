@@ -1,7 +1,7 @@
 {
 	"id": "note-metrics",
 	"name": "Daily Note Metrics",
-	"version": "1.1.1",
+	"version": "1.1.2",
 	"minAppVersion": "0.15.0",
 	"description": "Parses the tags in your Daily Notes to create interactive charts in a dashboard view.",
 	"author": "Andre-Diamond",

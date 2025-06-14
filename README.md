@@ -1,19 +1,18 @@
 # Daily Note Dashboard Plugin
 
-The Daily Note Dashboard Plugin aggregates and visualizes your daily note data, allowing you to track your habits and tags over time. It reads checkbox completions from a designated section in your Daily Notes and organizes tag data (e.g., `#habit/running` or `#work/documentation`) into interactive charts.
+The Daily Note Dashboard Plugin aggregates and visualizes your daily note data, allowing you to track checkboxes and tags over time. It reads checkbox completions from specified sections in your Daily Notes and organizes tag data (e.g., `#work/documentation` or `#project/planning`) into interactive charts.
 
 ![Dashboard](image.png)
 
 ## Features
 
-- **Dashboard View:** Interactive dashboard that displays charts representing your daily habit checkboxes and tag usage.
+- **Dashboard View:** Interactive dashboard that displays charts representing your checkbox completions and tag usage.
 - **Period Selection:** Filter your data by weekly, monthly, or yearly periods.
 - **Dynamic Charts:** Automatically update charts based on your Daily Note entries.
 - **Refresh Button:** Manually refresh the dashboard data with a single click.
-- **Flexible Habit Tracking:**
-  - **Checkbox Habits:** Track habits with checkboxes. The plugin now groups similar tasks by normalizing entries that end with "Task" followed by a number (e.g., "Community Task 3" is grouped with all "Community Task" entries).
-  - **Tag-based Habits:** Alternatively, track your habits by adding tags to your notes (e.g., `#habit/running`).
-- **Comprehensive Tag Capture:**
+- **Flexible Checkbox Tracking:**
+  - **Section-based Tracking:** Track checkboxes under any specified heading in your notes. The plugin groups similar tasks by normalizing entries that end with "Task" followed by a number (e.g., "Project Task 3" is grouped with all "Project Task" entries).
+- **Comprehensive Tag Tracking:**
   - **Single and Combo Tags:** Captures both single tags (e.g., `#work`) and combo tags (e.g., `#work/documentation`).
   - **Group Tags Chart:** Aggregates both plain and combo tags into a group chart for a comprehensive overview.
 
@@ -36,20 +35,64 @@ For example, a file named `2023-04-25 - Daily Note.md` will have its date parsed
 
 If a filename does not start with a date in the expected format, the plugin will fall back to using the file's creation time (as recorded in `file.stat.ctime`). This fallback ensures that a date is always available for aggregation, though it may not always reflect the intended note date. For accurate data parsing, please ensure your daily note filenames follow the "YYYY-MM-DD" naming convention.
 
-## Daily Habit Checkboxes Example
+## Checkbox Tracking
 
-The plugin parses habit checkboxes only if they are placed under the **`## Daily Habits`** heading and are formatted as markdown checkboxes. Below is an example of how you might structure your Daily Habit checkboxes in a Daily Note template:
+The plugin parses checkboxes under specified headings in your settings. By default, it looks for checkboxes under the **`## Daily Habits`** heading, but you can customize this in the plugin settings. The plugin will read all checkboxes under a heading until it encounters the next heading of the same or higher level.
 
+### Flexible Heading Matching (New)
+
+- **Any Level Matching:**
+  - If you enter a heading in the settings **without a `#`** (e.g., `Daily Habits`), the plugin will match that heading at **any heading level** (e.g., `# Daily Habits`, `## Daily Habits`, `### Daily Habits`, etc.).
+- **Level-Specific Matching:**
+  - If you enter a heading **with a `#`** (e.g., `## Daily Habits`), the plugin will only match that exact heading level (unless you enable the toggle below).
+- **Ignore Heading Levels Toggle:**
+  - If you enable the **Ignore heading levels** toggle in the settings, all headings that start with `#` will also match at any heading level (just like those without a `#`).
+
+#### Example
+
+Settings:
+- `Daily Habits`
+- `## Work Tasks`
+
+Markdown:
 ~~~markdown
-## Daily Habits
+# Daily Habits
 - [ ] Run 3km
-- [ ] Meditate for 10 minutes
-- [ ] Read a book chapter
-- [ ] Community Task 1
-- [ ] Community Task 2
+
+## Daily Habits
+- [ ] Meditate
+
+### Work Tasks
+- [ ] Review pull requests
+
+## Work Tasks
+- [ ] Update documentation
 ~~~
 
-*Note:* Habit checkboxes will only be recognized if they are under the "## Daily Habits" heading and follow the proper markdown checkbox syntax. You can also track your habits by simply adding tags to your notes (for example, `#habit/running`).
+- With the above settings, all checkboxes under any heading named "Daily Habits" (regardless of level) will be tracked, and only checkboxes under `## Work Tasks` will be tracked (unless the toggle is enabled, in which case all levels of "Work Tasks" will be tracked).
+
+*Note:* Checkboxes will only be recognized if they are under one of the headings specified in your plugin settings and follow the proper markdown checkbox syntax. The plugin reads all checkboxes under a heading until it finds another heading of the same or higher level.
+
+## Tag Tracking
+
+The plugin automatically captures and organizes tags from your daily notes. You can use both single tags and hierarchical tags (combo tags) to categorize your notes.
+
+### Tag Types
+
+1. **Single Tags:** Simple tags that start with `#` (e.g., `#work`, `#meeting`)
+2. **Combo Tags:** Hierarchical tags that use a forward slash (e.g., `#work/documentation`, `#project/planning`)
+
+### Example Usage
+
+~~~markdown
+#work #meeting #project/planning #work/documentation
+~~~
+
+The plugin will:
+- Track the frequency of each tag
+- Group combo tags by their prefix (e.g., all `#work/...` tags are grouped together)
+- Display tag usage in interactive charts
+- Show trends over time for both individual tags and tag groups
 
 ## Customization
 
