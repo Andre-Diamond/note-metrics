@@ -37,7 +37,7 @@ If a filename does not start with a date in the expected format, the plugin will
 
 ## Checkbox Tracking
 
-The plugin parses checkboxes under specified headings in your settings. By default, it looks for checkboxes under the **`## Daily Habits`** heading, but you can customize this in the plugin settings. The plugin will read all checkboxes under a heading until it encounters the next heading of the same or higher level.
+The plugin parses checkboxes under specified headings in your settings. By default, it looks for checkboxes under the **`## Daily Habits`** heading, but you can customize this in the plugin settings. The plugin will read all checkboxes under a heading until it encounters the next heading.
 
 ### Flexible Heading Matching (New)
 
@@ -71,7 +71,7 @@ Markdown:
 
 - With the above settings, all checkboxes under any heading named "Daily Habits" (regardless of level) will be tracked, and only checkboxes under `## Work Tasks` will be tracked (unless the toggle is enabled, in which case all levels of "Work Tasks" will be tracked).
 
-*Note:* Checkboxes will only be recognized if they are under one of the headings specified in your plugin settings and follow the proper markdown checkbox syntax. The plugin reads all checkboxes under a heading until it finds another heading of the same or higher level.
+*Note:* Checkboxes will only be recognized if they are under one of the headings specified in your plugin settings and follow the proper markdown checkbox syntax. The plugin reads all checkboxes under a heading until it finds another heading.
 
 ## Tag Tracking
 
