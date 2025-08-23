@@ -139,6 +139,144 @@
   background: var(--interactive-accent-hover);
 }
 
+/* Chart visibility settings styling */
+.chart-visibility-container {
+  margin-top: 16px;
+  margin-bottom: 24px;
+}
+
+.chart-visibility-setting {
+  margin-bottom: 16px;
+  padding: 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background-color: var(--background-secondary);
+  transition: all 0.2s ease;
+}
+
+.chart-visibility-setting:hover {
+  border-color: var(--interactive-accent);
+  background-color: var(--background-secondary-alt);
+}
+
+.chart-visibility-setting .setting-item-name {
+  font-weight: 600;
+  color: var(--text-normal);
+  margin-bottom: 4px;
+}
+
+.chart-visibility-setting .setting-item-description {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.chart-visibility-setting .setting-item-control {
+  margin-top: 8px;
+}
+
+/* Toggle switch styling */
+.chart-visibility-setting .checkbox-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.chart-visibility-setting .checkbox-container input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  cursor: pointer;
+}
+
+/* Chart order settings styling */
+.chart-order-container {
+  margin-top: 16px;
+  margin-bottom: 24px;
+  width: 100%;
+}
+
+.chart-order-container .setting-item {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chart-order-container .setting-item-info {
+  flex: 1;
+  margin-right: 16px;
+}
+
+.chart-order-container .setting-item-control {
+  flex: 0 0 auto;
+  width: 80px;
+}
+
+.chart-order-container .setting-item-control input {
+  width: 100%;
+  text-align: center;
+  padding: 4px 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+}
+
+.chart-order-container .setting-item-control input:focus {
+  outline: none;
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px var(--interactive-accent-hover);
+}
+
+/* Charts container styling */
+.charts-container {
+  width: 100%;
+  margin-top: 20px;
+}
+
+.charts-container .chart-container {
+  margin-bottom: 30px;
+  padding: 20px;
+  border-radius: 8px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+}
+
+.charts-container .chart-container:last-child {
+  margin-bottom: 0;
+}
+
+/* Specific chart type styling */
+.charts-container .emoji-tags-container {
+  border-left: 4px solid rgba(54, 162, 235, 0.8);
+}
+
+.charts-container .single-tags-container {
+  border-left: 4px solid #FF6384;
+}
+
+.charts-container .checkbox-chart-container {
+  border-left: 4px solid #9370DB;
+}
+
+.charts-container .tag-charts-container {
+  border-left: 4px solid #40E0D0;
+}
+
+.charts-container .group-chart-container {
+  border-left: 4px solid #9370DB;
+}
+
+/* Chart headers styling */
+.charts-container .chart-container h3 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  color: var(--text-normal);
+  font-size: 18px;
+  font-weight: 600;
+}
+
 /* Section dividers */
 hr {
   margin: 32px 0;
