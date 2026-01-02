@@ -1,7 +1,7 @@
 {
 	"id": "note-metrics",
 	"name": "Daily Note Metrics",
-	"version": "1.1.3",
+	"version": "1.1.4",
 	"minAppVersion": "0.15.0",
 	"description": "Parses tags, emoji tags, and checkboxes in your Daily Notes to create interactive charts.",
 	"author": "Andre-Diamond",
