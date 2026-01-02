@@ -1,14 +1,27 @@
 // ../src/views/DashboardView.ts
-import { ItemView, WorkspaceLeaf, Plugin, Notice } from 'obsidian';
+import { ItemView, WorkspaceLeaf, Notice } from 'obsidian';
 import { ChartComponent } from '../components/ChartComponent';
-import { getAvailablePeriods, parsePeriodNotes } from '../data/dataParser';
+import { getAvailablePeriods, parsePeriodNotes, PeriodChartData } from '../data/dataParser';
+import NoteMetricsPlugin from '../../main';
+import type { TooltipItem } from 'chart.js';
+
+// Minimal types for Chart.js callbacks
+interface LineChartDataset {
+	label: string;
+	data: number[];
+	borderColor: string;
+	backgroundColor: string;
+	borderWidth: number;
+	fill: boolean;
+	tension: number;
+}
 
 export const VIEW_TYPE_DASHBOARD = "dashboard-view";
 
 export class DashboardView extends ItemView {
-	plugin: any; // NoteMetricsPlugin instance
+	plugin: NoteMetricsPlugin;
 
-	constructor(leaf: WorkspaceLeaf, plugin: Plugin) {
+	constructor(leaf: WorkspaceLeaf, plugin: NoteMetricsPlugin) {
 		super(leaf);
 		this.plugin = plugin;
 	}
@@ -112,6 +125,36 @@ export class DashboardView extends ItemView {
 					order: pluginSettings?.singleTagsChartOrder || 5,
 					enabled: pluginSettings?.showSingleTagsChart !== false, // Default to true if not explicitly disabled
 					render: () => renderSingleTagsChart(periodData, periodType, chartsContainer)
+				},
+				{
+					id: 'line',
+					order: pluginSettings?.lineChartsOrder || 6,
+					enabled: pluginSettings?.showLineCharts !== false, // Default to true if not explicitly disabled
+					render: () => renderLineCharts(periodData, periodType, chartsContainer, this.plugin)
+				},
+				{
+					id: 'tagLine',
+					order: pluginSettings?.tagLineChartsOrder || 7,
+					enabled: pluginSettings?.showTagLineCharts !== false, // Default to true if not explicitly disabled
+					render: () => renderTagLineCharts(periodData, periodType, chartsContainer)
+				},
+				{
+					id: 'groupLine',
+					order: pluginSettings?.groupTagsLineChartOrder || 8,
+					enabled: pluginSettings?.showGroupTagsLineChart !== false, // Default to true if not explicitly disabled
+					render: () => renderGroupTagsLineChart(periodData, periodType, chartsContainer)
+				},
+				{
+					id: 'emojiLine',
+					order: pluginSettings?.emojiTagsLineChartOrder || 9,
+					enabled: pluginSettings?.showEmojiTagsLineChart !== false, // Default to true if not explicitly disabled
+					render: () => renderEmojiTagsLineChart(periodData, periodType, chartsContainer)
+				},
+				{
+					id: 'singleLine',
+					order: pluginSettings?.singleTagsLineChartOrder || 10,
+					enabled: pluginSettings?.showSingleTagsLineChart !== false, // Default to true if not explicitly disabled
+					render: () => renderSingleTagsLineChart(periodData, periodType, chartsContainer)
 				}
 			];
 
@@ -155,7 +198,7 @@ export class DashboardView extends ItemView {
 }
 
 // Chart rendering functions
-function renderCheckboxCharts(periodData: any, periodType: string, container: HTMLElement, plugin: any) {
+function renderCheckboxCharts(periodData: PeriodChartData, periodType: string, container: HTMLElement, plugin: NoteMetricsPlugin) {
 	const headingCheckboxHabits = periodData.headingCheckboxHabits || {};
 	const settingsHeadings: string[] = plugin?.settings?.headings || [];
 
@@ -194,22 +237,24 @@ function renderCheckboxCharts(periodData: any, periodType: string, container: HT
 					legend: { display: false },
 					tooltip: {
 						callbacks: {
-							title: function (context: any[]) {
+							title: function (context: TooltipItem<'bar'>[]) {
 								const index = context[0].dataIndex;
-								const labelName = context[0].chart.data.labels?.[index] as string;
+								const labels = context[0].chart.data.labels;
+								const labelName = labels && Array.isArray(labels) ? (labels[index] as string) : '';
 								let total = 0;
-								context[0].chart.data.datasets.forEach((dataset: any) => {
-									const data = dataset.data[index] as number;
-									if (data) total += data;
+								context[0].chart.data.datasets.forEach((dataset) => {
+									const data = (dataset.data[index] as number) || 0;
+									total += data;
 								});
 								return [`${labelName} (Total: ${total})`];
 							},
-							label: function (context: any) {
-								return `${context.dataset.label}: ${context.raw}`;
+							label: function (context: TooltipItem<'bar'>) {
+								return `${context.dataset.label}: ${context.parsed.y ?? context.raw}`;
 							}
 						}
 					}
 				},
+				// @ts-ignore - barPercentage is valid for bar charts but not in generic ChartOptions type
 				barPercentage: 0.6
 			});
 		} else if (periodType === 'yearly') {
@@ -238,22 +283,24 @@ function renderCheckboxCharts(periodData: any, periodType: string, container: HT
 					legend: { display: false },
 					tooltip: {
 						callbacks: {
-							title: function (context: any[]) {
+							title: function (context: TooltipItem<'bar'>[]) {
 								const index = context[0].dataIndex;
-								const labelName = context[0].chart.data.labels?.[index] as string;
+								const labels = context[0].chart.data.labels;
+								const labelName = labels && Array.isArray(labels) ? (labels[index] as string) : '';
 								let total = 0;
-								context[0].chart.data.datasets.forEach((dataset: any) => {
-									const data = dataset.data[index] as number;
-									if (data) total += data;
+								context[0].chart.data.datasets.forEach((dataset) => {
+									const data = (dataset.data[index] as number) || 0;
+									total += data;
 								});
 								return [`${labelName} (Total: ${total})`];
 							},
-							label: function (context: any) {
-								return `${context.dataset.label}: ${context.raw}`;
+							label: function (context: TooltipItem<'bar'>) {
+								return `${context.dataset.label}: ${context.parsed.y ?? context.raw}`;
 							}
 						}
 					}
 				},
+				// @ts-ignore - barPercentage is valid for bar charts but not in generic ChartOptions type
 				barPercentage: 0.6
 			});
 		} else if (periodType === 'monthly') {
@@ -281,29 +328,31 @@ function renderCheckboxCharts(periodData: any, periodType: string, container: HT
 					legend: { display: false },
 					tooltip: {
 						callbacks: {
-							title: function (context: any[]) {
+							title: function (context: TooltipItem<'bar'>[]) {
 								const index = context[0].dataIndex;
-								const labelName = context[0].chart.data.labels?.[index] as string;
+								const labels = context[0].chart.data.labels;
+								const labelName = labels && Array.isArray(labels) ? (labels[index] as string) : '';
 								let total = 0;
-								context[0].chart.data.datasets.forEach((dataset: any) => {
-									const data = dataset.data[index] as number;
-									if (data) total += data;
+								context[0].chart.data.datasets.forEach((dataset) => {
+									const data = (dataset.data[index] as number) || 0;
+									total += data;
 								});
 								return [`${labelName} (Total: ${total})`];
 							},
-							label: function (context: any) {
-								return `${context.dataset.label}: ${context.raw}`;
+							label: function (context: TooltipItem<'bar'>) {
+								return `${context.dataset.label}: ${context.parsed.y ?? context.raw}`;
 							}
 						}
 					}
 				},
+				// @ts-ignore - barPercentage is valid for bar charts but not in generic ChartOptions type
 				barPercentage: 0.6
 			});
 		}
 	}
 }
 
-function renderTagCharts(periodData: any, periodType: string, container: HTMLElement) {
+function renderTagCharts(periodData: PeriodChartData, periodType: string, container: HTMLElement) {
 	for (const group in periodData.tagData) {
 		const groupData = periodData.tagData[group];
 		const groupChartDiv = container.createDiv({ cls: "chart-container tag-charts-container" });
@@ -339,22 +388,24 @@ function renderTagCharts(periodData: any, periodType: string, container: HTMLEle
 					legend: { display: false },
 					tooltip: {
 						callbacks: {
-							title: function (context: any[]) {
+							title: function (context: TooltipItem<'bar'>[]) {
 								const index = context[0].dataIndex;
-								const labelName = context[0].chart.data.labels?.[index] as string;
+								const labels = context[0].chart.data.labels;
+								const labelName = labels && Array.isArray(labels) ? (labels[index] as string) : '';
 								let total = 0;
-								context[0].chart.data.datasets.forEach((dataset: any) => {
-									const data = dataset.data[index] as number;
-									if (data) total += data;
+								context[0].chart.data.datasets.forEach((dataset) => {
+									const data = (dataset.data[index] as number) || 0;
+									total += data;
 								});
 								return [`${labelName} (Total: ${total})`];
 							},
-							label: function (context: any) {
-								return `${context.dataset.label}: ${context.raw}`;
+							label: function (context: TooltipItem<'bar'>) {
+								return `${context.dataset.label}: ${context.parsed.y ?? context.raw}`;
 							}
 						}
 					}
 				},
+				// @ts-ignore - barPercentage is valid for bar charts but not in generic ChartOptions type
 				barPercentage: 0.6
 			});
 		} else if (periodType === 'yearly') {
@@ -384,22 +435,24 @@ function renderTagCharts(periodData: any, periodType: string, container: HTMLEle
 					legend: { display: false },
 					tooltip: {
 						callbacks: {
-							title: function (context: any[]) {
+							title: function (context: TooltipItem<'bar'>[]) {
 								const index = context[0].dataIndex;
-								const labelName = context[0].chart.data.labels?.[index] as string;
+								const labels = context[0].chart.data.labels;
+								const labelName = labels && Array.isArray(labels) ? (labels[index] as string) : '';
 								let total = 0;
-								context[0].chart.data.datasets.forEach((dataset: any) => {
-									const data = dataset.data[index] as number;
-									if (data) total += data;
+								context[0].chart.data.datasets.forEach((dataset) => {
+									const data = (dataset.data[index] as number) || 0;
+									total += data;
 								});
 								return [`${labelName} (Total: ${total})`];
 							},
-							label: function (context: any) {
-								return `${context.dataset.label}: ${context.raw}`;
+							label: function (context: TooltipItem<'bar'>) {
+								return `${context.dataset.label}: ${context.parsed.y ?? context.raw}`;
 							}
 						}
 					}
 				},
+				// @ts-ignore - barPercentage is valid for bar charts but not in generic ChartOptions type
 				barPercentage: 0.6
 			});
 		} else if (periodType === 'monthly') {
@@ -428,29 +481,31 @@ function renderTagCharts(periodData: any, periodType: string, container: HTMLEle
 					legend: { display: false },
 					tooltip: {
 						callbacks: {
-							title: function (context: any[]) {
+							title: function (context: TooltipItem<'bar'>[]) {
 								const index = context[0].dataIndex;
-								const labelName = context[0].chart.data.labels?.[index] as string;
+								const labels = context[0].chart.data.labels;
+								const labelName = labels && Array.isArray(labels) ? (labels[index] as string) : '';
 								let total = 0;
-								context[0].chart.data.datasets.forEach((dataset: any) => {
-									const data = dataset.data[index] as number;
-									if (data) total += data;
+								context[0].chart.data.datasets.forEach((dataset) => {
+									const data = (dataset.data[index] as number) || 0;
+									total += data;
 								});
 								return [`${labelName} (Total: ${total})`];
 							},
-							label: function (context: any) {
-								return `${context.dataset.label}: ${context.raw}`;
+							label: function (context: TooltipItem<'bar'>) {
+								return `${context.dataset.label}: ${context.parsed.y ?? context.raw}`;
 							}
 						}
 					}
 				},
+				// @ts-ignore - barPercentage is valid for bar charts but not in generic ChartOptions type
 				barPercentage: 0.6
 			});
 		}
 	}
 }
 
-function renderGroupTagsChart(periodData: any, periodType: string, container: HTMLElement) {
+function renderGroupTagsChart(periodData: PeriodChartData, periodType: string, container: HTMLElement) {
 	if (Object.keys(periodData.groupTagCounts).length === 0) return;
 
 	const chartDiv = container.createDiv({ cls: "chart-container group-chart-container" });
@@ -486,22 +541,24 @@ function renderGroupTagsChart(periodData: any, periodType: string, container: HT
 				legend: { display: false },
 				tooltip: {
 					callbacks: {
-						title: function (context: any[]) {
+						title: function (context: TooltipItem<'bar'>[]) {
 							const index = context[0].dataIndex;
-							const labelName = context[0].chart.data.labels?.[index] as string;
+							const labels = context[0].chart.data.labels;
+							const labelName = labels && Array.isArray(labels) ? (labels[index] as string) : '';
 							let total = 0;
-							context[0].chart.data.datasets.forEach((dataset: any) => {
-								const data = dataset.data[index] as number;
-								if (data) total += data;
+							context[0].chart.data.datasets.forEach((dataset) => {
+								const data = (dataset.data[index] as number) || 0;
+								total += data;
 							});
 							return [`${labelName} (Total: ${total})`];
 						},
-						label: function (context: any) {
-							return `${context.dataset.label}: ${context.raw}`;
+						label: function (context: TooltipItem<'bar'>) {
+							return `${context.dataset.label}: ${context.parsed.y ?? context.raw}`;
 						}
 					}
 				}
 			},
+			// @ts-ignore - barPercentage is valid for bar charts but not in generic ChartOptions type
 			barPercentage: 0.6
 		});
 	} else if (periodType === 'yearly') {
@@ -531,22 +588,24 @@ function renderGroupTagsChart(periodData: any, periodType: string, container: HT
 				legend: { display: false },
 				tooltip: {
 					callbacks: {
-						title: function (context: any[]) {
+						title: function (context: TooltipItem<'bar'>[]) {
 							const index = context[0].dataIndex;
-							const labelName = context[0].chart.data.labels?.[index] as string;
+							const labels = context[0].chart.data.labels;
+							const labelName = labels && Array.isArray(labels) ? (labels[index] as string) : '';
 							let total = 0;
-							context[0].chart.data.datasets.forEach((dataset: any) => {
-								const data = dataset.data[index] as number;
-								if (data) total += data;
+							context[0].chart.data.datasets.forEach((dataset) => {
+								const data = (dataset.data[index] as number) || 0;
+								total += data;
 							});
 							return [`${labelName} (Total: ${total})`];
 						},
-						label: function (context: any) {
-							return `${context.dataset.label}: ${context.raw}`;
+						label: function (context: TooltipItem<'bar'>) {
+							return `${context.dataset.label}: ${context.parsed.y ?? context.raw}`;
 						}
 					}
 				}
 			},
+			// @ts-ignore - barPercentage is valid for bar charts but not in generic ChartOptions type
 			barPercentage: 0.6
 		});
 	} else if (periodType === 'monthly') {
@@ -575,28 +634,30 @@ function renderGroupTagsChart(periodData: any, periodType: string, container: HT
 				legend: { display: false },
 				tooltip: {
 					callbacks: {
-						title: function (context: any[]) {
+						title: function (context: TooltipItem<'bar'>[]) {
 							const index = context[0].dataIndex;
-							const labelName = context[0].chart.data.labels?.[index] as string;
+							const labels = context[0].chart.data.labels;
+							const labelName = labels && Array.isArray(labels) ? (labels[index] as string) : '';
 							let total = 0;
-							context[0].chart.data.datasets.forEach((dataset: any) => {
-								const data = dataset.data[index] as number;
-								if (data) total += data;
+							context[0].chart.data.datasets.forEach((dataset) => {
+								const data = (dataset.data[index] as number) || 0;
+								total += data;
 							});
 							return [`${labelName} (Total: ${total})`];
 						},
-						label: function (context: any) {
-							return `${context.dataset.label}: ${context.raw}`;
+						label: function (context: TooltipItem<'bar'>) {
+							return `${context.dataset.label}: ${context.parsed.y ?? context.raw}`;
 						}
 					}
 				}
 			},
+			// @ts-ignore - barPercentage is valid for bar charts but not in generic ChartOptions type
 			barPercentage: 0.6
 		});
 	}
 }
 
-function renderSingleTagsChart(periodData: any, periodType: string, container: HTMLElement) {
+function renderSingleTagsChart(periodData: PeriodChartData, periodType: string, container: HTMLElement) {
 	if (Object.keys(periodData.singleTags).length === 0) {
 		return;
 	}
@@ -634,22 +695,24 @@ function renderSingleTagsChart(periodData: any, periodType: string, container: H
 				legend: { display: false },
 				tooltip: {
 					callbacks: {
-						title: function (context: any[]) {
+						title: function (context: TooltipItem<'bar'>[]) {
 							const index = context[0].dataIndex;
-							const labelName = context[0].chart.data.labels?.[index] as string;
+							const labels = context[0].chart.data.labels;
+							const labelName = labels && Array.isArray(labels) ? (labels[index] as string) : '';
 							let total = 0;
-							context[0].chart.data.datasets.forEach((dataset: any) => {
-								const data = dataset.data[index] as number;
-								if (data) total += data;
+							context[0].chart.data.datasets.forEach((dataset) => {
+								const data = (dataset.data[index] as number) || 0;
+								total += data;
 							});
 							return [`${labelName} (Total: ${total})`];
 						},
-						label: function (context: any) {
-							return `${context.dataset.label}: ${context.raw}`;
+						label: function (context: TooltipItem<'bar'>) {
+							return `${context.dataset.label}: ${context.parsed.y ?? context.raw}`;
 						}
 					}
 				}
 			},
+			// @ts-ignore - barPercentage is valid for bar charts but not in generic ChartOptions type
 			barPercentage: 0.6
 		});
 	} else if (periodType === 'yearly') {
@@ -679,22 +742,24 @@ function renderSingleTagsChart(periodData: any, periodType: string, container: H
 				legend: { display: false },
 				tooltip: {
 					callbacks: {
-						title: function (context: any[]) {
+						title: function (context: TooltipItem<'bar'>[]) {
 							const index = context[0].dataIndex;
-							const labelName = context[0].chart.data.labels?.[index] as string;
+							const labels = context[0].chart.data.labels;
+							const labelName = labels && Array.isArray(labels) ? (labels[index] as string) : '';
 							let total = 0;
-							context[0].chart.data.datasets.forEach((dataset: any) => {
-								const data = dataset.data[index] as number;
-								if (data) total += data;
+							context[0].chart.data.datasets.forEach((dataset) => {
+								const data = (dataset.data[index] as number) || 0;
+								total += data;
 							});
 							return [`${labelName} (Total: ${total})`];
 						},
-						label: function (context: any) {
-							return `${context.dataset.label}: ${context.raw}`;
+						label: function (context: TooltipItem<'bar'>) {
+							return `${context.dataset.label}: ${context.parsed.y ?? context.raw}`;
 						}
 					}
 				}
 			},
+			// @ts-ignore - barPercentage is valid for bar charts but not in generic ChartOptions type
 			barPercentage: 0.6
 		});
 	} else if (periodType === 'monthly') {
@@ -723,28 +788,30 @@ function renderSingleTagsChart(periodData: any, periodType: string, container: H
 				legend: { display: false },
 				tooltip: {
 					callbacks: {
-						title: function (context: any[]) {
+						title: function (context: TooltipItem<'bar'>[]) {
 							const index = context[0].dataIndex;
-							const labelName = context[0].chart.data.labels?.[index] as string;
+							const labels = context[0].chart.data.labels;
+							const labelName = labels && Array.isArray(labels) ? (labels[index] as string) : '';
 							let total = 0;
-							context[0].chart.data.datasets.forEach((dataset: any) => {
-								const data = dataset.data[index] as number;
-								if (data) total += data;
+							context[0].chart.data.datasets.forEach((dataset) => {
+								const data = (dataset.data[index] as number) || 0;
+								total += data;
 							});
 							return [`${labelName} (Total: ${total})`];
 						},
-						label: function (context: any) {
-							return `${context.dataset.label}: ${context.raw}`;
+						label: function (context: TooltipItem<'bar'>) {
+							return `${context.dataset.label}: ${context.parsed.y ?? context.raw}`;
 						}
 					}
 				}
 			},
+			// @ts-ignore - barPercentage is valid for bar charts but not in generic ChartOptions type
 			barPercentage: 0.6
 		});
 	}
 }
 
-function renderEmojiTagsChart(periodData: any, periodType: string, container: HTMLElement) {
+function renderEmojiTagsChart(periodData: PeriodChartData, periodType: string, container: HTMLElement) {
 	if (Object.keys(periodData.emojiTags).length === 0) {
 		return;
 	}
@@ -783,22 +850,24 @@ function renderEmojiTagsChart(periodData: any, periodType: string, container: HT
 				legend: { display: false },
 				tooltip: {
 					callbacks: {
-						title: function (context: any[]) {
+						title: function (context: TooltipItem<'bar'>[]) {
 							const index = context[0].dataIndex;
-							const labelName = context[0].chart.data.labels?.[index] as string;
+							const labels = context[0].chart.data.labels;
+							const labelName = labels && Array.isArray(labels) ? (labels[index] as string) : '';
 							let total = 0;
-							context[0].chart.data.datasets.forEach((dataset: any) => {
-								const data = dataset.data[index] as number;
-								if (data) total += data;
+							context[0].chart.data.datasets.forEach((dataset) => {
+								const data = (dataset.data[index] as number) || 0;
+								total += data;
 							});
 							return [`${labelName} (Total: ${total})`];
 						},
-						label: function (context: any) {
-							return `${context.dataset.label}: ${context.raw}`;
+						label: function (context: TooltipItem<'bar'>) {
+							return `${context.dataset.label}: ${context.parsed.y ?? context.raw}`;
 						}
 					}
 				}
 			},
+			// @ts-ignore - barPercentage is valid for bar charts but not in generic ChartOptions type
 			barPercentage: 0.6
 		});
 	} else if (periodType === 'yearly') {
@@ -828,22 +897,24 @@ function renderEmojiTagsChart(periodData: any, periodType: string, container: HT
 				legend: { display: false },
 				tooltip: {
 					callbacks: {
-						title: function (context: any[]) {
+						title: function (context: TooltipItem<'bar'>[]) {
 							const index = context[0].dataIndex;
-							const labelName = context[0].chart.data.labels?.[index] as string;
+							const labels = context[0].chart.data.labels;
+							const labelName = labels && Array.isArray(labels) ? (labels[index] as string) : '';
 							let total = 0;
-							context[0].chart.data.datasets.forEach((dataset: any) => {
-								const data = dataset.data[index] as number;
-								if (data) total += data;
+							context[0].chart.data.datasets.forEach((dataset) => {
+								const data = (dataset.data[index] as number) || 0;
+								total += data;
 							});
 							return [`${labelName} (Total: ${total})`];
 						},
-						label: function (context: any) {
-							return `${context.dataset.label}: ${context.raw}`;
+						label: function (context: TooltipItem<'bar'>) {
+							return `${context.dataset.label}: ${context.parsed.y ?? context.raw}`;
 						}
 					}
 				}
 			},
+			// @ts-ignore - barPercentage is valid for bar charts but not in generic ChartOptions type
 			barPercentage: 0.6
 		});
 	} else if (periodType === 'monthly') {
@@ -872,23 +943,620 @@ function renderEmojiTagsChart(periodData: any, periodType: string, container: HT
 				legend: { display: false },
 				tooltip: {
 					callbacks: {
-						title: function (context: any[]) {
+						title: function (context: TooltipItem<'bar'>[]) {
 							const index = context[0].dataIndex;
-							const labelName = context[0].chart.data.labels?.[index] as string;
+							const labels = context[0].chart.data.labels;
+							const labelName = labels && Array.isArray(labels) ? (labels[index] as string) : '';
 							let total = 0;
-							context[0].chart.data.datasets.forEach((dataset: any) => {
-								const data = dataset.data[index] as number;
-								if (data) total += data;
+							context[0].chart.data.datasets.forEach((dataset) => {
+								const data = (dataset.data[index] as number) || 0;
+								total += data;
 							});
 							return [`${labelName} (Total: ${total})`];
 						},
-						label: function (context: any) {
-							return `${context.dataset.label}: ${context.raw}`;
+						label: function (context: TooltipItem<'bar'>) {
+							return `${context.dataset.label}: ${context.parsed.y ?? context.raw}`;
 						}
 					}
 				}
 			},
+			// @ts-ignore - barPercentage is valid for bar charts but not in generic ChartOptions type
 			barPercentage: 0.6
 		});
 	}
+}
+
+function renderLineCharts(periodData: PeriodChartData, periodType: string, container: HTMLElement, plugin: NoteMetricsPlugin) {
+	const headingCheckboxHabits = periodData.headingCheckboxHabits || {};
+	const settingsHeadings: string[] = plugin?.settings?.headings || [];
+
+	// Generate colors for different items
+	const colors = [
+		'rgba(255, 99, 132, 1)',
+		'rgba(54, 162, 235, 1)',
+		'rgba(255, 206, 86, 1)',
+		'rgba(75, 192, 192, 1)',
+		'rgba(153, 102, 255, 1)',
+		'rgba(255, 159, 64, 1)',
+		'rgba(199, 199, 199, 1)',
+		'rgba(83, 102, 255, 1)',
+		'rgba(255, 99, 255, 1)',
+		'rgba(99, 255, 132, 1)',
+		'rgba(255, 132, 99, 1)',
+		'rgba(132, 99, 255, 1)'
+	];
+
+	for (const heading of settingsHeadings) {
+		const habits = Object.keys(headingCheckboxHabits[heading] || {}).sort((a, b) => a.localeCompare(b));
+		if (habits.length === 0) continue;
+
+		const chartDiv = container.createDiv({ cls: "chart-container line-chart-container" });
+		chartDiv.createEl('h3', { text: `${heading.replace(/^#+\s*/, '')} - Line Chart` });
+
+		let timeLabels: string[] = [];
+		let datasets: LineChartDataset[] = [];
+
+		if (periodType === 'weekly') {
+			timeLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+			datasets = habits.map((habit, index) => ({
+				label: habit,
+				data: timeLabels.map(subPeriod => {
+					const value = periodData.hierarchicalData?.headingCheckboxHabits?.[heading]?.[habit]?.[subPeriod];
+					return value !== undefined ? value : 0;
+				}),
+				borderColor: colors[index % colors.length],
+				backgroundColor: colors[index % colors.length].replace('1)', '0.1)'),
+				borderWidth: 2,
+				fill: false,
+				tension: 0.4
+			}));
+		} else if (periodType === 'yearly') {
+			const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+			timeLabels = monthNames;
+			const subPeriods = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+			datasets = habits.map((habit, index) => ({
+				label: habit,
+				data: subPeriods.map(subPeriod => {
+					const value = periodData.hierarchicalData?.headingCheckboxHabits?.[heading]?.[habit]?.[subPeriod];
+					return value !== undefined ? value : 0;
+				}),
+				borderColor: colors[index % colors.length],
+				backgroundColor: colors[index % colors.length].replace('1)', '0.1)'),
+				borderWidth: 2,
+				fill: false,
+				tension: 0.4
+			}));
+		} else if (periodType === 'monthly') {
+			timeLabels = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5'];
+			datasets = habits.map((habit, index) => ({
+				label: habit,
+				data: timeLabels.map(subPeriod => {
+					const value = periodData.hierarchicalData?.headingCheckboxHabits?.[heading]?.[habit]?.[subPeriod];
+					return value !== undefined ? value : 0;
+				}),
+				borderColor: colors[index % colors.length],
+				backgroundColor: colors[index % colors.length].replace('1)', '0.1)'),
+				borderWidth: 2,
+				fill: false,
+				tension: 0.4
+			}));
+		}
+
+		const lineChartData = {
+			labels: timeLabels,
+			datasets: datasets,
+		};
+
+		new ChartComponent(chartDiv, lineChartData, {
+			responsive: true,
+			scales: {
+				x: {
+					title: {
+						display: true,
+						text: 'Time'
+					}
+				},
+				y: {
+					title: {
+						display: true,
+						text: 'Amount'
+					},
+					beginAtZero: true
+				}
+			},
+			plugins: {
+				legend: {
+					display: true,
+					position: 'top'
+				},
+				tooltip: {
+					mode: 'index',
+					intersect: false,
+					callbacks: {
+						title: function (context: TooltipItem<'line'>[]) {
+							const index = context[0].dataIndex;
+							return timeLabels[index] || '';
+						},
+						label: function (context: TooltipItem<'line'>) {
+							return `${context.dataset.label}: ${context.parsed.y ?? context.raw}`;
+						}
+					}
+				}
+			}
+		}, 'line');
+	}
+}
+
+function renderTagLineCharts(periodData: PeriodChartData, periodType: string, container: HTMLElement) {
+	// Generate colors for different items
+	const colors = [
+		'rgba(64, 224, 208, 1)',
+		'rgba(255, 99, 132, 1)',
+		'rgba(54, 162, 235, 1)',
+		'rgba(255, 206, 86, 1)',
+		'rgba(75, 192, 192, 1)',
+		'rgba(153, 102, 255, 1)',
+		'rgba(255, 159, 64, 1)',
+		'rgba(199, 199, 199, 1)',
+		'rgba(83, 102, 255, 1)',
+		'rgba(255, 99, 255, 1)',
+		'rgba(99, 255, 132, 1)',
+		'rgba(255, 132, 99, 1)',
+		'rgba(132, 99, 255, 1)'
+	];
+
+	for (const group in periodData.tagData) {
+		const groupData = periodData.tagData[group];
+		const items = Object.keys(groupData).sort((a, b) => a.localeCompare(b));
+		if (items.length === 0) continue;
+
+		const groupChartDiv = container.createDiv({ cls: "chart-container tag-line-charts-container" });
+		groupChartDiv.createEl('h3', { text: `${group} tags - Line Chart` });
+
+		let timeLabels: string[] = [];
+		let datasets: LineChartDataset[] = [];
+
+		if (periodType === 'weekly') {
+			timeLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+			datasets = items.map((item, index) => ({
+				label: item,
+				data: timeLabels.map(subPeriod => {
+					const value = periodData.hierarchicalData?.tagData[group]?.[item]?.[subPeriod];
+					return value !== undefined ? value : 0;
+				}),
+				borderColor: colors[index % colors.length],
+				backgroundColor: colors[index % colors.length].replace('1)', '0.1)'),
+				borderWidth: 2,
+				fill: false,
+				tension: 0.4
+			}));
+		} else if (periodType === 'yearly') {
+			const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+			timeLabels = monthNames;
+			const subPeriods = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+			datasets = items.map((item, index) => ({
+				label: item,
+				data: subPeriods.map(subPeriod => {
+					const value = periodData.hierarchicalData?.tagData[group]?.[item]?.[subPeriod];
+					return value !== undefined ? value : 0;
+				}),
+				borderColor: colors[index % colors.length],
+				backgroundColor: colors[index % colors.length].replace('1)', '0.1)'),
+				borderWidth: 2,
+				fill: false,
+				tension: 0.4
+			}));
+		} else if (periodType === 'monthly') {
+			timeLabels = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5'];
+			datasets = items.map((item, index) => ({
+				label: item,
+				data: timeLabels.map(subPeriod => {
+					const value = periodData.hierarchicalData?.tagData[group]?.[item]?.[subPeriod];
+					return value !== undefined ? value : 0;
+				}),
+				borderColor: colors[index % colors.length],
+				backgroundColor: colors[index % colors.length].replace('1)', '0.1)'),
+				borderWidth: 2,
+				fill: false,
+				tension: 0.4
+			}));
+		}
+
+		const tagLineChartData = {
+			labels: timeLabels,
+			datasets: datasets,
+		};
+
+		new ChartComponent(groupChartDiv, tagLineChartData, {
+			responsive: true,
+			scales: {
+				x: {
+					title: {
+						display: true,
+						text: 'Time'
+					}
+				},
+				y: {
+					title: {
+						display: true,
+						text: 'Amount'
+					},
+					beginAtZero: true
+				}
+			},
+			plugins: {
+				legend: {
+					display: true,
+					position: 'top'
+				},
+				tooltip: {
+					mode: 'index',
+					intersect: false,
+					callbacks: {
+						title: function (context: TooltipItem<'line'>[]) {
+							const index = context[0].dataIndex;
+							return timeLabels[index] || '';
+						},
+						label: function (context: TooltipItem<'line'>) {
+							return `${context.dataset.label}: ${context.parsed.y ?? context.raw}`;
+						}
+					}
+				}
+			}
+		}, 'line');
+	}
+}
+
+function renderGroupTagsLineChart(periodData: PeriodChartData, periodType: string, container: HTMLElement) {
+	if (Object.keys(periodData.groupTagCounts).length === 0) return;
+
+	// Generate colors for different items
+	const colors = [
+		'rgba(147, 112, 219, 1)',
+		'rgba(255, 99, 132, 1)',
+		'rgba(54, 162, 235, 1)',
+		'rgba(255, 206, 86, 1)',
+		'rgba(75, 192, 192, 1)',
+		'rgba(153, 102, 255, 1)',
+		'rgba(255, 159, 64, 1)',
+		'rgba(199, 199, 199, 1)',
+		'rgba(83, 102, 255, 1)',
+		'rgba(255, 99, 255, 1)',
+		'rgba(99, 255, 132, 1)',
+		'rgba(255, 132, 99, 1)',
+		'rgba(132, 99, 255, 1)'
+	];
+
+	const chartDiv = container.createDiv({ cls: "chart-container group-tags-line-chart-container" });
+	chartDiv.createEl('h3', { text: "Group tags - Line Chart" });
+	const groups = Object.keys(periodData.groupTagCounts).sort((a, b) => a.localeCompare(b));
+
+	let timeLabels: string[] = [];
+	let datasets: LineChartDataset[] = [];
+
+	if (periodType === 'weekly') {
+		timeLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+		datasets = groups.map((group, index) => ({
+			label: group,
+			data: timeLabels.map(subPeriod => {
+				const value = periodData.hierarchicalData?.groupTagCounts[group]?.[subPeriod];
+				return value !== undefined ? value : 0;
+			}),
+			borderColor: colors[index % colors.length],
+			backgroundColor: colors[index % colors.length].replace('1)', '0.1)'),
+			borderWidth: 2,
+			fill: false,
+			tension: 0.4
+		}));
+	} else if (periodType === 'yearly') {
+		const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+		timeLabels = monthNames;
+		const subPeriods = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+		datasets = groups.map((group, index) => ({
+			label: group,
+			data: subPeriods.map(subPeriod => {
+				const value = periodData.hierarchicalData?.groupTagCounts[group]?.[subPeriod];
+				return value !== undefined ? value : 0;
+			}),
+			borderColor: colors[index % colors.length],
+			backgroundColor: colors[index % colors.length].replace('1)', '0.1)'),
+			borderWidth: 2,
+			fill: false,
+			tension: 0.4
+		}));
+	} else if (periodType === 'monthly') {
+		timeLabels = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5'];
+		datasets = groups.map((group, index) => ({
+			label: group,
+			data: timeLabels.map(subPeriod => {
+				const value = periodData.hierarchicalData?.groupTagCounts[group]?.[subPeriod];
+				return value !== undefined ? value : 0;
+			}),
+			borderColor: colors[index % colors.length],
+			backgroundColor: colors[index % colors.length].replace('1)', '0.1)'),
+			borderWidth: 2,
+			fill: false,
+			tension: 0.4
+		}));
+	}
+
+	const groupLineChartData = {
+		labels: timeLabels,
+		datasets: datasets,
+	};
+
+	new ChartComponent(chartDiv, groupLineChartData, {
+		responsive: true,
+		scales: {
+			x: {
+				title: {
+					display: true,
+					text: 'Time'
+				}
+			},
+			y: {
+				title: {
+					display: true,
+					text: 'Amount'
+				},
+				beginAtZero: true
+			}
+		},
+		plugins: {
+			legend: {
+				display: true,
+				position: 'top'
+			},
+			tooltip: {
+				mode: 'index',
+				intersect: false,
+				callbacks: {
+					title: function (context: TooltipItem<'line'>[]) {
+						const index = context[0].dataIndex;
+						return timeLabels[index] || '';
+					},
+					label: function (context: TooltipItem<'line'>) {
+						return `${context.dataset.label}: ${context.parsed.y ?? context.raw}`;
+					}
+				}
+			}
+		}
+	}, 'line');
+}
+
+function renderEmojiTagsLineChart(periodData: PeriodChartData, periodType: string, container: HTMLElement) {
+	if (Object.keys(periodData.emojiTags).length === 0) {
+		return;
+	}
+
+	// Generate colors for different items
+	const colors = [
+		'rgba(54, 162, 235, 1)',
+		'rgba(255, 99, 132, 1)',
+		'rgba(255, 206, 86, 1)',
+		'rgba(75, 192, 192, 1)',
+		'rgba(153, 102, 255, 1)',
+		'rgba(255, 159, 64, 1)',
+		'rgba(199, 199, 199, 1)',
+		'rgba(83, 102, 255, 1)',
+		'rgba(255, 99, 255, 1)',
+		'rgba(99, 255, 132, 1)',
+		'rgba(255, 132, 99, 1)',
+		'rgba(132, 99, 255, 1)'
+	];
+
+	const chartDiv = container.createDiv({ cls: "chart-container emoji-tags-line-chart-container" });
+	chartDiv.createEl('h3', { text: "Emoji tags - Line Chart" });
+
+	const emojis = Object.keys(periodData.emojiTags).sort((a, b) => a.localeCompare(b));
+
+	let timeLabels: string[] = [];
+	let datasets: LineChartDataset[] = [];
+
+	if (periodType === 'weekly') {
+		timeLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+		datasets = emojis.map((emoji, index) => ({
+			label: emoji,
+			data: timeLabels.map(subPeriod => {
+				const value = periodData.hierarchicalData?.emojiTags[emoji]?.[subPeriod];
+				return value !== undefined ? value : 0;
+			}),
+			borderColor: colors[index % colors.length],
+			backgroundColor: colors[index % colors.length].replace('1)', '0.1)'),
+			borderWidth: 2,
+			fill: false,
+			tension: 0.4
+		}));
+	} else if (periodType === 'yearly') {
+		const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+		timeLabels = monthNames;
+		const subPeriods = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+		datasets = emojis.map((emoji, index) => ({
+			label: emoji,
+			data: subPeriods.map(subPeriod => {
+				const value = periodData.hierarchicalData?.emojiTags[emoji]?.[subPeriod];
+				return value !== undefined ? value : 0;
+			}),
+			borderColor: colors[index % colors.length],
+			backgroundColor: colors[index % colors.length].replace('1)', '0.1)'),
+			borderWidth: 2,
+			fill: false,
+			tension: 0.4
+		}));
+	} else if (periodType === 'monthly') {
+		timeLabels = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5'];
+		datasets = emojis.map((emoji, index) => ({
+			label: emoji,
+			data: timeLabels.map(subPeriod => {
+				const value = periodData.hierarchicalData?.emojiTags[emoji]?.[subPeriod];
+				return value !== undefined ? value : 0;
+			}),
+			borderColor: colors[index % colors.length],
+			backgroundColor: colors[index % colors.length].replace('1)', '0.1)'),
+			borderWidth: 2,
+			fill: false,
+			tension: 0.4
+		}));
+	}
+
+	const emojiLineChartData = {
+		labels: timeLabels,
+		datasets: datasets,
+	};
+
+	new ChartComponent(chartDiv, emojiLineChartData, {
+		responsive: true,
+		scales: {
+			x: {
+				title: {
+					display: true,
+					text: 'Time'
+				}
+			},
+			y: {
+				title: {
+					display: true,
+					text: 'Amount'
+				},
+				beginAtZero: true
+			}
+		},
+		plugins: {
+			legend: {
+				display: true,
+				position: 'top'
+			},
+			tooltip: {
+				mode: 'index',
+				intersect: false,
+				callbacks: {
+					title: function (context: TooltipItem<'line'>[]) {
+						const index = context[0].dataIndex;
+						return timeLabels[index] || '';
+					},
+					label: function (context: TooltipItem<'line'>) {
+						return `${context.dataset.label}: ${context.parsed.y ?? context.raw}`;
+					}
+				}
+			}
+		}
+	}, 'line');
+}
+
+function renderSingleTagsLineChart(periodData: PeriodChartData, periodType: string, container: HTMLElement) {
+	if (Object.keys(periodData.singleTags).length === 0) {
+		return;
+	}
+
+	// Generate colors for different items
+	const colors = [
+		'rgba(255, 99, 132, 1)',
+		'rgba(54, 162, 235, 1)',
+		'rgba(255, 206, 86, 1)',
+		'rgba(75, 192, 192, 1)',
+		'rgba(153, 102, 255, 1)',
+		'rgba(255, 159, 64, 1)',
+		'rgba(199, 199, 199, 1)',
+		'rgba(83, 102, 255, 1)',
+		'rgba(255, 99, 255, 1)',
+		'rgba(99, 255, 132, 1)',
+		'rgba(255, 132, 99, 1)',
+		'rgba(132, 99, 255, 1)'
+	];
+
+	const chartDiv = container.createDiv({ cls: "chart-container single-tags-line-chart-container" });
+	chartDiv.createEl('h3', { text: "Single tags - Line Chart" });
+	const tags = Object.keys(periodData.singleTags).sort((a, b) => a.localeCompare(b));
+
+	let timeLabels: string[] = [];
+	let datasets: LineChartDataset[] = [];
+
+	if (periodType === 'weekly') {
+		timeLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+		datasets = tags.map((tag, index) => ({
+			label: tag,
+			data: timeLabels.map(subPeriod => {
+				const value = periodData.hierarchicalData?.singleTags[tag]?.[subPeriod];
+				return value !== undefined ? value : 0;
+			}),
+			borderColor: colors[index % colors.length],
+			backgroundColor: colors[index % colors.length].replace('1)', '0.1)'),
+			borderWidth: 2,
+			fill: false,
+			tension: 0.4
+		}));
+	} else if (periodType === 'yearly') {
+		const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+		timeLabels = monthNames;
+		const subPeriods = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+		datasets = tags.map((tag, index) => ({
+			label: tag,
+			data: subPeriods.map(subPeriod => {
+				const value = periodData.hierarchicalData?.singleTags[tag]?.[subPeriod];
+				return value !== undefined ? value : 0;
+			}),
+			borderColor: colors[index % colors.length],
+			backgroundColor: colors[index % colors.length].replace('1)', '0.1)'),
+			borderWidth: 2,
+			fill: false,
+			tension: 0.4
+		}));
+	} else if (periodType === 'monthly') {
+		timeLabels = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5'];
+		datasets = tags.map((tag, index) => ({
+			label: tag,
+			data: timeLabels.map(subPeriod => {
+				const value = periodData.hierarchicalData?.singleTags[tag]?.[subPeriod];
+				return value !== undefined ? value : 0;
+			}),
+			borderColor: colors[index % colors.length],
+			backgroundColor: colors[index % colors.length].replace('1)', '0.1)'),
+			borderWidth: 2,
+			fill: false,
+			tension: 0.4
+		}));
+	}
+
+	const singleTagsLineChartData = {
+		labels: timeLabels,
+		datasets: datasets,
+	};
+
+	new ChartComponent(chartDiv, singleTagsLineChartData, {
+		responsive: true,
+		scales: {
+			x: {
+				title: {
+					display: true,
+					text: 'Time'
+				}
+			},
+			y: {
+				title: {
+					display: true,
+					text: 'Amount'
+				},
+				beginAtZero: true
+			}
+		},
+		plugins: {
+			legend: {
+				display: true,
+				position: 'top'
+			},
+			tooltip: {
+				mode: 'index',
+				intersect: false,
+				callbacks: {
+					title: function (context: TooltipItem<'line'>[]) {
+						const index = context[0].dataIndex;
+						return timeLabels[index] || '';
+					},
+					label: function (context: TooltipItem<'line'>) {
+						return `${context.dataset.label}: ${context.parsed.y ?? context.raw}`;
+					}
+				}
+			}
+		}
+	}, 'line');
 }

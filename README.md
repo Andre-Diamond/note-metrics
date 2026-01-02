@@ -20,7 +20,7 @@ The Daily Note Dashboard Plugin aggregates and visualizes your daily note data, 
   - **Single Tags:** Parses `#tag` without a slash.
   - **Emoji Tags:** Parses emoji-based tags (e.g., `#🚀`).
   - **False-Positive Filtering:** Skips URL fragments, code blocks, and hashes that are not tags.
-- **Configurable Charts:** Toggle visibility per chart type and control chart display order.
+- **Configurable Charts:** Toggle visibility per chart type and control chart display order. Includes both stacked bar charts and line charts for visualizing trends over time.
 - **Ribbon & Command:** Open the dashboard via a ribbon icon or command palette.
 
 ## Installation
@@ -122,11 +122,19 @@ The plugin allows you to customize which charts are displayed in the dashboard. 
 
 ### Available Chart Types
 
-1. **Checkbox Charts:** Display charts for habits and tasks under tracked headings
-2. **Tag Charts:** Show charts for combo tags (e.g., #work/urgent)
-3. **Group Tags Chart:** Display chart for group tag counts (e.g., #work, #personal)
-4. **Single Tags Chart:** Show chart for single tags without categories (e.g., #important, #urgent)
-5. **Emoji Tags Chart:** Show chart for emoji tag usage (e.g., 🚀, 📚)
+**Bar Charts:**
+1. **Checkbox Charts:** Display stacked bar charts for habits and tasks under tracked headings
+2. **Tag Charts:** Show stacked bar charts for combo tags (e.g., #work/urgent)
+3. **Group Tags Chart:** Display stacked bar chart for group tag counts (e.g., #work, #personal)
+4. **Single Tags Chart:** Show stacked bar chart for single tags without categories (e.g., #important, #urgent)
+5. **Emoji Tags Chart:** Show stacked bar chart for emoji tag usage (e.g., 🚀, 📚)
+
+**Line Charts:**
+6. **Checkbox Line Charts:** Display line charts for checkbox habits with time on x-axis and amount on y-axis
+7. **Combo Tag Line Charts:** Display line charts for combo tags with time on x-axis and amount on y-axis
+8. **Group Tags Line Chart:** Display line chart for group tags summary with time on x-axis and amount on y-axis
+9. **Emoji Tags Line Chart:** Display line chart for emoji tags with time on x-axis and amount on y-axis
+10. **Single Tags Line Chart:** Display line chart for single tags with time on x-axis and amount on y-axis
 
 ### How to Configure
 
@@ -145,11 +153,19 @@ This feature is particularly useful if you want to:
 
 Control the order in which chart sections appear. Lower numbers render first.
 
-- **Checkbox Charts Order**: Position of checkbox charts.
-- **Combo Tag Charts Order**: Position of combo tag charts per group.
-- **Group Tags Summary Order**: Position of the overall group tags chart.
-- **Emoji Tags Chart Order**: Position of the emoji tags chart.
-- **Single Tags Chart Order**: Position of the single tags chart.
+**Bar Charts:**
+- **Checkbox Charts Order**: Position of checkbox bar charts.
+- **Combo Tag Charts Order**: Position of combo tag bar charts per group.
+- **Group Tags Summary Order**: Position of the overall group tags bar chart.
+- **Emoji Tags Chart Order**: Position of the emoji tags bar chart.
+- **Single Tags Chart Order**: Position of the single tags bar chart.
+
+**Line Charts:**
+- **Checkbox Line Charts Order**: Position of checkbox line charts.
+- **Combo Tag Line Charts Order**: Position of combo tag line charts.
+- **Group Tags Line Chart Order**: Position of the group tags line chart.
+- **Emoji Tags Line Chart Order**: Position of the emoji tags line chart.
+- **Single Tags Line Chart Order**: Position of the single tags line chart.
 
 Adjust these under Settings → Chart Display Order.
 
@@ -168,9 +184,9 @@ Open Obsidian Settings → Community Plugins → Daily Note Dashboard.
     - With `#`: matches the exact level unless you enable the toggle below.
   - Use the **Ignore heading levels** toggle to match headings regardless of level.
 - **Chart Visibility**
-  - Toggle which chart types appear on the dashboard: Checkbox, Combo Tag, Group Tags, Emoji Tags, Single Tags.
+  - Toggle which chart types appear on the dashboard: Checkbox, Combo Tag, Group Tags, Emoji Tags, Single Tags, and their corresponding line chart variants.
 - **Chart Display Order**
-  - Set numeric order for each chart type to control layout.
+  - Set numeric order for each chart type (both bar and line charts) to control layout.
 
 ## Customization
 

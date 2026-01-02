@@ -268,6 +268,27 @@
   border-left: 4px solid #9370DB;
 }
 
+/* Line chart container styling - matching bar chart colors */
+.charts-container .line-chart-container {
+  border-left: 4px solid #9370DB;
+}
+
+.charts-container .tag-line-charts-container {
+  border-left: 4px solid #40E0D0;
+}
+
+.charts-container .group-tags-line-chart-container {
+  border-left: 4px solid #9370DB;
+}
+
+.charts-container .emoji-tags-line-chart-container {
+  border-left: 4px solid rgba(54, 162, 235, 0.8);
+}
+
+.charts-container .single-tags-line-chart-container {
+  border-left: 4px solid #FF6384;
+}
+
 /* Chart headers styling */
 .charts-container .chart-container h3 {
   margin-top: 0;

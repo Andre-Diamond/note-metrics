@@ -1,5 +1,11 @@
 // ../src/data/dataParser.ts
 import { Plugin, TFile } from 'obsidian';
+import type { NoteMetricsSettings } from '../../main';
+
+// Type for a plugin with NoteMetricsSettings
+interface PluginWithSettings extends Plugin {
+	settings?: NoteMetricsSettings;
+}
 
 export interface PeriodChartData {
 	// For checkboxes: keys are habit names and values are counts.
@@ -165,14 +171,14 @@ function isLikelyNotATag(content: string, hashIndex: number, tagText: string): b
  * @returns PeriodChartData with aggregated checkbox habit counts and tag counts.
  */
 export async function parsePeriodNotes(
-	plugin: Plugin,
+	plugin: PluginWithSettings,
 	periodType: 'weekly' | 'monthly' | 'yearly',
 	periodKey: string
 ): Promise<PeriodChartData> {
 	const vault = plugin.app.vault;
-	const folders: string[] = (plugin as any).settings?.folders || ['Daily Notes'];
-	const headings: string[] = (plugin as any).settings?.headings || ['## Daily Habits'];
-	const scanAllFolders: boolean = (plugin as any).settings?.scanAllFolders || false;
+	const folders: string[] = plugin.settings?.folders || ['Daily Notes'];
+	const headings: string[] = plugin.settings?.headings || ['## Daily Habits'];
+	const scanAllFolders: boolean = plugin.settings?.scanAllFolders || false;
 
 	let files: TFile[];
 	if (scanAllFolders) {
@@ -247,7 +253,7 @@ export async function parsePeriodNotes(
 		// Parse checkbox habits for each heading
 		for (const heading of headings) {
 			const headingText = heading.replace(/^#+\s*/, '');
-			const ignoreLevels = (plugin as any).settings?.ignoreHeadingLevels || false;
+			const ignoreLevels = plugin.settings?.ignoreHeadingLevels || false;
 			let headingPattern;
 			if (!heading.trim().startsWith('#')) {
 				// If no #, always match any heading level
@@ -401,12 +407,12 @@ export async function parsePeriodNotes(
  *                   'yearly' returns "YYYY".
  */
 export async function getAvailablePeriods(
-	plugin: Plugin,
+	plugin: PluginWithSettings,
 	periodType: 'weekly' | 'monthly' | 'yearly'
 ): Promise<string[]> {
 	const vault = plugin.app.vault;
-	const folders: string[] = (plugin as any).settings?.folders || ['Daily Notes'];
-	const scanAllFolders: boolean = (plugin as any).settings?.scanAllFolders || false;
+	const folders: string[] = plugin.settings?.folders || ['Daily Notes'];
+	const scanAllFolders: boolean = plugin.settings?.scanAllFolders || false;
 
 	let files: TFile[];
 	if (scanAllFolders) {

@@ -8,7 +8,7 @@ import {
 } from 'obsidian';
 import { DashboardView, VIEW_TYPE_DASHBOARD } from './src/views/DashboardView';
 
-interface NoteMetricsSettings {
+export interface NoteMetricsSettings {
 	// Setting: list of folders to scan.
 	folders: string[];
 	// Setting: list of headings to track checkboxes under
@@ -23,12 +23,22 @@ interface NoteMetricsSettings {
 	showGroupTagsChart: boolean;
 	showEmojiTagsChart: boolean;
 	showSingleTagsChart: boolean;
+	showLineCharts: boolean;
+	showTagLineCharts: boolean;
+	showGroupTagsLineChart: boolean;
+	showEmojiTagsLineChart: boolean;
+	showSingleTagsLineChart: boolean;
 	// Setting: chart display order (lower numbers appear first)
 	checkboxChartsOrder: number;
 	tagChartsOrder: number;
 	groupTagsChartOrder: number;
 	emojiTagsChartOrder: number;
 	singleTagsChartOrder: number;
+	lineChartsOrder: number;
+	tagLineChartsOrder: number;
+	groupTagsLineChartOrder: number;
+	emojiTagsLineChartOrder: number;
+	singleTagsLineChartOrder: number;
 }
 
 const DEFAULT_SETTINGS: NoteMetricsSettings = {
@@ -46,12 +56,22 @@ const DEFAULT_SETTINGS: NoteMetricsSettings = {
 	showGroupTagsChart: true,
 	showEmojiTagsChart: true,
 	showSingleTagsChart: true,
+	showLineCharts: true,
+	showTagLineCharts: true,
+	showGroupTagsLineChart: true,
+	showEmojiTagsLineChart: true,
+	showSingleTagsLineChart: true,
 	// Default chart orders
 	checkboxChartsOrder: 1,
 	tagChartsOrder: 2,
 	groupTagsChartOrder: 3,
 	emojiTagsChartOrder: 4,
-	singleTagsChartOrder: 5
+	singleTagsChartOrder: 5,
+	lineChartsOrder: 6,
+	tagLineChartsOrder: 7,
+	groupTagsLineChartOrder: 8,
+	emojiTagsLineChartOrder: 9,
+	singleTagsLineChartOrder: 10
 }
 
 export default class NoteMetricsPlugin extends Plugin {
@@ -334,6 +354,66 @@ class NoteMetricsSettingTab extends PluginSettingTab {
 				}));
 		singleTagSetting.settingEl.addClass('chart-visibility-setting');
 
+		// Line charts setting
+		const lineChartSetting = new Setting(chartVisibilityContainer)
+			.setName('Show Checkbox Line Charts')
+			.setDesc('Display line charts for checkbox habits with time on x-axis and amount on y-axis')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.showLineCharts)
+				.onChange(async (value) => {
+					this.plugin.settings.showLineCharts = value;
+					await this.plugin.saveSettings();
+				}));
+		lineChartSetting.settingEl.addClass('chart-visibility-setting');
+
+		// Tag line charts setting
+		const tagLineChartSetting = new Setting(chartVisibilityContainer)
+			.setName('Show Combo Tag Line Charts')
+			.setDesc('Display line charts for combo tags with time on x-axis and amount on y-axis')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.showTagLineCharts)
+				.onChange(async (value) => {
+					this.plugin.settings.showTagLineCharts = value;
+					await this.plugin.saveSettings();
+				}));
+		tagLineChartSetting.settingEl.addClass('chart-visibility-setting');
+
+		// Group tags line chart setting
+		const groupTagsLineChartSetting = new Setting(chartVisibilityContainer)
+			.setName('Show Group Tags Line Chart')
+			.setDesc('Display line chart for group tags summary with time on x-axis and amount on y-axis')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.showGroupTagsLineChart)
+				.onChange(async (value) => {
+					this.plugin.settings.showGroupTagsLineChart = value;
+					await this.plugin.saveSettings();
+				}));
+		groupTagsLineChartSetting.settingEl.addClass('chart-visibility-setting');
+
+		// Emoji tags line chart setting
+		const emojiTagsLineChartSetting = new Setting(chartVisibilityContainer)
+			.setName('Show Emoji Tags Line Chart')
+			.setDesc('Display line chart for emoji tags with time on x-axis and amount on y-axis')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.showEmojiTagsLineChart)
+				.onChange(async (value) => {
+					this.plugin.settings.showEmojiTagsLineChart = value;
+					await this.plugin.saveSettings();
+				}));
+		emojiTagsLineChartSetting.settingEl.addClass('chart-visibility-setting');
+
+		// Single tags line chart setting
+		const singleTagsLineChartSetting = new Setting(chartVisibilityContainer)
+			.setName('Show Single Tags Line Chart')
+			.setDesc('Display line chart for single tags with time on x-axis and amount on y-axis')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.showSingleTagsLineChart)
+				.onChange(async (value) => {
+					this.plugin.settings.showSingleTagsLineChart = value;
+					await this.plugin.saveSettings();
+				}));
+		singleTagsLineChartSetting.settingEl.addClass('chart-visibility-setting');
+
 		// Add chart order section
 		containerEl.createEl('hr');
 
@@ -407,6 +487,71 @@ class NoteMetricsSettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					const numValue = parseInt(value) || 5;
 					this.plugin.settings.singleTagsChartOrder = numValue;
+					await this.plugin.saveSettings();
+				}));
+
+		// Line charts order setting
+		new Setting(chartOrderContainer)
+			.setName('Checkbox Line Charts Order')
+			.setDesc('Display order for checkbox line charts (currently: ' + this.plugin.settings.lineChartsOrder + ')')
+			.addText(text => text
+				.setPlaceholder('6')
+				.setValue(this.plugin.settings.lineChartsOrder.toString())
+				.onChange(async (value) => {
+					const numValue = parseInt(value) || 6;
+					this.plugin.settings.lineChartsOrder = numValue;
+					await this.plugin.saveSettings();
+				}));
+
+		// Tag line charts order setting
+		new Setting(chartOrderContainer)
+			.setName('Combo Tag Line Charts Order')
+			.setDesc('Display order for combo tag line charts (currently: ' + this.plugin.settings.tagLineChartsOrder + ')')
+			.addText(text => text
+				.setPlaceholder('7')
+				.setValue(this.plugin.settings.tagLineChartsOrder.toString())
+				.onChange(async (value) => {
+					const numValue = parseInt(value) || 7;
+					this.plugin.settings.tagLineChartsOrder = numValue;
+					await this.plugin.saveSettings();
+				}));
+
+		// Group tags line chart order setting
+		new Setting(chartOrderContainer)
+			.setName('Group Tags Line Chart Order')
+			.setDesc('Display order for group tags line chart (currently: ' + this.plugin.settings.groupTagsLineChartOrder + ')')
+			.addText(text => text
+				.setPlaceholder('8')
+				.setValue(this.plugin.settings.groupTagsLineChartOrder.toString())
+				.onChange(async (value) => {
+					const numValue = parseInt(value) || 8;
+					this.plugin.settings.groupTagsLineChartOrder = numValue;
+					await this.plugin.saveSettings();
+				}));
+
+		// Emoji tags line chart order setting
+		new Setting(chartOrderContainer)
+			.setName('Emoji Tags Line Chart Order')
+			.setDesc('Display order for emoji tags line chart (currently: ' + this.plugin.settings.emojiTagsLineChartOrder + ')')
+			.addText(text => text
+				.setPlaceholder('9')
+				.setValue(this.plugin.settings.emojiTagsLineChartOrder.toString())
+				.onChange(async (value) => {
+					const numValue = parseInt(value) || 9;
+					this.plugin.settings.emojiTagsLineChartOrder = numValue;
+					await this.plugin.saveSettings();
+				}));
+
+		// Single tags line chart order setting
+		new Setting(chartOrderContainer)
+			.setName('Single Tags Line Chart Order')
+			.setDesc('Display order for single tags line chart (currently: ' + this.plugin.settings.singleTagsLineChartOrder + ')')
+			.addText(text => text
+				.setPlaceholder('10')
+				.setValue(this.plugin.settings.singleTagsLineChartOrder.toString())
+				.onChange(async (value) => {
+					const numValue = parseInt(value) || 10;
+					this.plugin.settings.singleTagsLineChartOrder = numValue;
 					await this.plugin.saveSettings();
 				}));
 
