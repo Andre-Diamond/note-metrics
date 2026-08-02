@@ -1,11 +1,11 @@
 {
 	"id": "note-metrics",
 	"name": "Daily Note Metrics",
-	"version": "1.1.4",
+	"version": "1.2.0",
 	"minAppVersion": "0.15.0",
 	"description": "Parses tags, emoji tags, and checkboxes in your Daily Notes to create interactive charts.",
 	"author": "Andre-Diamond",
 	"authorUrl": "https://github.com/Andre-Diamond",
-	"fundingUrl":  "https://buymeacoffee.com/signius",
+	"fundingUrl": "https://buymeacoffee.com/signius",
 	"isDesktopOnly": false
 }
