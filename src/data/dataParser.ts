@@ -18,6 +18,8 @@ export interface PeriodChartData {
 	emojiTags: { [emoji: string]: number };
 	// New: Single tags without categories (e.g., #important, #urgent)
 	singleTags: { [tag: string]: number };
+	// Daily checkbox completion counts keyed by YYYY-MM-DD (for heatmap)
+	dailyActivity: { [date: string]: number };
 	// New: Hierarchical data for monthly and yearly views
 	hierarchicalData?: {
 		checkboxHabits: { [habit: string]: { [subPeriod: string]: number } };
@@ -33,15 +35,37 @@ export interface PeriodChartData {
 }
 
 // Helper: parse a date from a filename assuming "YYYY-MM-DD" at the beginning.
+// Uses local calendar components (not UTC) so week/month keys stay on the intended day.
 function parseDateFromFilename(filename: string): Date | null {
-	const match = filename.match(/^(\d{4}-\d{2}-\d{2})/);
+	const match = filename.match(/^(\d{4})-(\d{2})-(\d{2})/);
 	if (match) {
-		const date = new Date(match[1]);
+		const date = new Date(
+			parseInt(match[1], 10),
+			parseInt(match[2], 10) - 1,
+			parseInt(match[3], 10)
+		);
 		if (!isNaN(date.getTime())) {
 			return date;
 		}
 	}
 	return null;
+}
+
+/** Local midnight for a YYYY-MM-DD key. */
+function parseLocalDateKey(dateKey: string): Date {
+	const [year, month, day] = dateKey.split('-').map(Number);
+	return new Date(year, month - 1, day);
+}
+
+/** Monday (local) of the week containing the given date. */
+function getMondayOfWeek(date: Date): Date {
+	const daysFromMonday = (date.getDay() + 6) % 7; // Sun=6, Mon=0, ... Sat=5
+	return new Date(date.getFullYear(), date.getMonth(), date.getDate() - daysFromMonday);
+}
+
+/** Local calendar day only (strips time-of-day for inclusive range checks). */
+function toLocalDay(date: Date): Date {
+	return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
 /**
@@ -198,6 +222,8 @@ export async function parsePeriodNotes(
 	const emojiTags: { [emoji: string]: number } = {};
 	// New: Single tags without categories (e.g., #important, #urgent)
 	const singleTags: { [tag: string]: number } = {};
+	// Daily checkbox completion counts for heatmap
+	const dailyActivity: { [date: string]: number } = {};
 	// New: Map heading to its habits and their counts
 	const headingCheckboxHabits: { [heading: string]: { [habit: string]: number } } = {};
 
@@ -219,10 +245,10 @@ export async function parsePeriodNotes(
 		let subPeriod: string | null = null;
 
 		if (periodType === 'weekly') {
-			const monday = new Date(periodKey);
-			const sunday = new Date(monday);
-			sunday.setDate(monday.getDate() + 6);
-			include = fileDate >= monday && fileDate <= sunday;
+			const monday = parseLocalDateKey(periodKey);
+			const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
+			const fileDay = toLocalDay(fileDate);
+			include = fileDay >= monday && fileDay <= sunday;
 			if (include) {
 				// Get the day of week (0-6, where 0 is Sunday)
 				const dayOfWeek = fileDate.getDay();
@@ -230,7 +256,7 @@ export async function parsePeriodNotes(
 				subPeriod = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][(dayOfWeek + 6) % 7];
 			}
 		} else if (periodType === 'monthly') {
-			const fileMonth = fileDate.toISOString().slice(0, 7);
+			const fileMonth = toLocalDateKey(fileDate).slice(0, 7);
 			include = fileMonth === periodKey;
 			if (include) {
 				// Get the week number within the month (1-5)
@@ -242,13 +268,14 @@ export async function parsePeriodNotes(
 			const fileYear = fileDate.getFullYear().toString();
 			include = fileYear === periodKey;
 			if (include) {
-				subPeriod = fileDate.toISOString().slice(5, 7); // "MM"
+				subPeriod = toLocalDateKey(fileDate).slice(5, 7); // "MM"
 			}
 		}
 
 		if (!include) continue;
 
 		const content = await vault.read(file);
+		const dateKey = toLocalDateKey(fileDate);
 
 		// Parse checkbox habits for each heading
 		for (const heading of headings) {
@@ -284,6 +311,7 @@ export async function parsePeriodNotes(
 
 						// Update total counts
 						checkboxHabits[habitName] = (checkboxHabits[habitName] || 0) + 1;
+						dailyActivity[dateKey] = (dailyActivity[dateKey] || 0) + 1;
 
 						// Update heading-specific counts
 						if (!headingCheckboxHabits[heading]) headingCheckboxHabits[heading] = {};
@@ -395,9 +423,56 @@ export async function parsePeriodNotes(
 		groupTagCounts,
 		emojiTags,
 		singleTags, // Always include singleTags
+		dailyActivity,
 		hierarchicalData: hierarchicalData, // Always include hierarchical data
 		headingCheckboxHabits
 	};
+}
+
+/**
+ * Formats a Date as a local YYYY-MM-DD key (avoids UTC day-shift from toISOString).
+ */
+export function toLocalDateKey(date: Date): string {
+	const year = date.getFullYear();
+	const month = String(date.getMonth() + 1).padStart(2, '0');
+	const day = String(date.getDate()).padStart(2, '0');
+	return `${year}-${month}-${day}`;
+}
+
+/**
+ * Returns every date key (YYYY-MM-DD) in the selected period, inclusive.
+ */
+export function getPeriodDateRange(
+	periodType: 'weekly' | 'monthly' | 'yearly',
+	periodKey: string
+): string[] {
+	const dates: string[] = [];
+
+	if (periodType === 'weekly') {
+		const monday = parseLocalDateKey(periodKey);
+		for (let i = 0; i < 7; i++) {
+			dates.push(toLocalDateKey(
+				new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i)
+			));
+		}
+	} else if (periodType === 'monthly') {
+		const [yearStr, monthStr] = periodKey.split('-');
+		const year = parseInt(yearStr, 10);
+		const month = parseInt(monthStr, 10) - 1;
+		const daysInMonth = new Date(year, month + 1, 0).getDate();
+		for (let day = 1; day <= daysInMonth; day++) {
+			dates.push(toLocalDateKey(new Date(year, month, day)));
+		}
+	} else if (periodType === 'yearly') {
+		const year = parseInt(periodKey, 10);
+		const start = new Date(year, 0, 1);
+		const end = new Date(year, 11, 31);
+		for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+			dates.push(toLocalDateKey(d));
+		}
+	}
+
+	return dates;
 }
 
 /**
@@ -431,16 +506,10 @@ export async function getAvailablePeriods(
 		if (!fileDate) continue;
 
 		if (periodType === 'weekly') {
-			// Adjust to the Monday of that week.
-			const jsDay = fileDate.getDay();
-			const diff = (jsDay === 0) ? -6 : (1 - jsDay);
-			const monday = new Date(fileDate);
-			monday.setDate(fileDate.getDate() + diff);
-			const mondayStr = monday.toISOString().slice(0, 10);
-			periodSet.add(mondayStr);
+			// Adjust to the Monday of that week (local calendar, avoids UTC day-shift).
+			periodSet.add(toLocalDateKey(getMondayOfWeek(fileDate)));
 		} else if (periodType === 'monthly') {
-			const monthStr = fileDate.toISOString().slice(0, 7); // "YYYY-MM"
-			periodSet.add(monthStr);
+			periodSet.add(toLocalDateKey(fileDate).slice(0, 7)); // "YYYY-MM"
 		} else if (periodType === 'yearly') {
 			const yearStr = fileDate.getFullYear().toString();
 			periodSet.add(yearStr);

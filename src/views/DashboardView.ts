@@ -1,7 +1,9 @@
 // ../src/views/DashboardView.ts
 import { ItemView, WorkspaceLeaf, Notice } from 'obsidian';
 import { ChartComponent } from '../components/ChartComponent';
-import { getAvailablePeriods, parsePeriodNotes, PeriodChartData } from '../data/dataParser';
+import { HeatmapComponent } from '../components/HeatmapComponent';
+import { getAvailablePeriods, getPeriodDateRange, parsePeriodNotes, PeriodChartData } from '../data/dataParser';
+import { buildPeriodCsv, saveCsvToVault } from '../data/csvExport';
 import NoteMetricsPlugin from '../../main';
 import type { TooltipItem } from 'chart.js';
 
@@ -79,6 +81,28 @@ export class DashboardView extends ItemView {
 			new Notice('Dashboard refreshed!');
 		});
 
+		// **** Export CSV Button ****
+		const exportButton = container.createEl('button', { text: 'Export CSV' });
+		exportButton.addClass('export-button');
+		exportButton.addEventListener('click', async () => {
+			const periodType = periodTypeSelector.value as 'weekly' | 'monthly' | 'yearly';
+			const periodKey = periodSelector.value;
+			if (!periodKey) {
+				new Notice('No period selected to export.');
+				return;
+			}
+
+			try {
+				const periodData = await parsePeriodNotes(this.plugin, periodType, periodKey);
+				const csv = buildPeriodCsv(periodData, periodType, periodKey);
+				const path = await saveCsvToVault(this.app, csv, periodType, periodKey);
+				new Notice(`Exported to ${path}`);
+			} catch (error) {
+				console.error('Failed to export CSV', error);
+				new Notice('Failed to export CSV.');
+			}
+		});
+
 		// Single container for all charts that will be ordered
 		const chartsContainer = container.createDiv({ cls: "charts-container" });
 
@@ -96,6 +120,12 @@ export class DashboardView extends ItemView {
 			const pluginSettings = this.plugin.settings;
 
 			const chartTypes = [
+				{
+					id: 'heatmap',
+					order: pluginSettings?.heatmapChartOrder ?? 0,
+					enabled: pluginSettings?.showHeatmapChart !== false, // Default to true if not explicitly disabled
+					render: () => renderHeatmapChart(periodData, periodType, periodKey, chartsContainer)
+				},
 				{
 					id: 'checkbox',
 					order: pluginSettings?.checkboxChartsOrder || 1,
@@ -198,6 +228,24 @@ export class DashboardView extends ItemView {
 }
 
 // Chart rendering functions
+function renderHeatmapChart(
+	periodData: PeriodChartData,
+	periodType: 'weekly' | 'monthly' | 'yearly',
+	periodKey: string,
+	container: HTMLElement
+) {
+	const chartDiv = container.createDiv({ cls: 'chart-container heatmap-chart-container' });
+	const dates = getPeriodDateRange(periodType, periodKey);
+
+	new HeatmapComponent(chartDiv, {
+		title: 'Activity heatmap',
+		periodType,
+		periodKey,
+		dates,
+		dailyActivity: periodData.dailyActivity || {}
+	});
+}
+
 function renderCheckboxCharts(periodData: PeriodChartData, periodType: string, container: HTMLElement, plugin: NoteMetricsPlugin) {
 	const headingCheckboxHabits = periodData.headingCheckboxHabits || {};
 	const settingsHeadings: string[] = plugin?.settings?.headings || [];

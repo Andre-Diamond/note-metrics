@@ -28,6 +28,7 @@ export interface NoteMetricsSettings {
 	showGroupTagsLineChart: boolean;
 	showEmojiTagsLineChart: boolean;
 	showSingleTagsLineChart: boolean;
+	showHeatmapChart: boolean;
 	// Setting: chart display order (lower numbers appear first)
 	checkboxChartsOrder: number;
 	tagChartsOrder: number;
@@ -39,6 +40,7 @@ export interface NoteMetricsSettings {
 	groupTagsLineChartOrder: number;
 	emojiTagsLineChartOrder: number;
 	singleTagsLineChartOrder: number;
+	heatmapChartOrder: number;
 }
 
 const DEFAULT_SETTINGS: NoteMetricsSettings = {
@@ -61,6 +63,7 @@ const DEFAULT_SETTINGS: NoteMetricsSettings = {
 	showGroupTagsLineChart: true,
 	showEmojiTagsLineChart: true,
 	showSingleTagsLineChart: true,
+	showHeatmapChart: true,
 	// Default chart orders
 	checkboxChartsOrder: 1,
 	tagChartsOrder: 2,
@@ -71,7 +74,8 @@ const DEFAULT_SETTINGS: NoteMetricsSettings = {
 	tagLineChartsOrder: 7,
 	groupTagsLineChartOrder: 8,
 	emojiTagsLineChartOrder: 9,
-	singleTagsLineChartOrder: 10
+	singleTagsLineChartOrder: 10,
+	heatmapChartOrder: 0
 }
 
 export default class NoteMetricsPlugin extends Plugin {
@@ -414,6 +418,18 @@ class NoteMetricsSettingTab extends PluginSettingTab {
 				}));
 		singleTagsLineChartSetting.settingEl.addClass('chart-visibility-setting');
 
+		// Heatmap chart setting
+		const heatmapChartSetting = new Setting(chartVisibilityContainer)
+			.setName('Show Activity Heatmap')
+			.setDesc('Display a GitHub-style heatmap of daily checkbox completions for the selected period')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.showHeatmapChart)
+				.onChange(async (value) => {
+					this.plugin.settings.showHeatmapChart = value;
+					await this.plugin.saveSettings();
+				}));
+		heatmapChartSetting.settingEl.addClass('chart-visibility-setting');
+
 		// Add chart order section
 		containerEl.createEl('hr');
 
@@ -552,6 +568,19 @@ class NoteMetricsSettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					const numValue = parseInt(value) || 10;
 					this.plugin.settings.singleTagsLineChartOrder = numValue;
+					await this.plugin.saveSettings();
+				}));
+
+		// Heatmap chart order setting
+		new Setting(chartOrderContainer)
+			.setName('Activity Heatmap Order')
+			.setDesc('Display order for activity heatmap (currently: ' + this.plugin.settings.heatmapChartOrder + ')')
+			.addText(text => text
+				.setPlaceholder('0')
+				.setValue(this.plugin.settings.heatmapChartOrder.toString())
+				.onChange(async (value) => {
+					const numValue = parseInt(value) || 0;
+					this.plugin.settings.heatmapChartOrder = numValue;
 					await this.plugin.saveSettings();
 				}));
 

@@ -10,6 +10,7 @@ The Daily Note Dashboard Plugin aggregates and visualizes your daily note data, 
 - **Period Selection:** Filter by weekly, monthly, or yearly periods; periods auto-populate from your notes.
 - **Dynamic Charts:** Charts update from your Daily Notes; manual refresh supported.
 - **Refresh Button:** One-click data refresh in the dashboard.
+- **CSV Export:** Export the selected period’s checkbox, tag, and daily activity data to a CSV file in your vault.
 - **Folders Control:** Scan only selected folders or your entire vault.
 - **Flexible Checkbox Tracking:**
   - **Section-based Tracking:** Track completed checkboxes under specified headings only.
@@ -20,7 +21,8 @@ The Daily Note Dashboard Plugin aggregates and visualizes your daily note data, 
   - **Single Tags:** Parses `#tag` without a slash.
   - **Emoji Tags:** Parses emoji-based tags (e.g., `#🚀`).
   - **False-Positive Filtering:** Skips URL fragments, code blocks, and hashes that are not tags.
-- **Configurable Charts:** Toggle visibility per chart type and control chart display order. Includes both stacked bar charts and line charts for visualizing trends over time.
+- **Configurable Charts:** Toggle visibility per chart type and control chart display order. Includes stacked bar charts, line charts, and a GitHub-style activity heatmap for visualizing trends over time.
+- **Activity Heatmap:** Shows daily checkbox completions as a color-intensity grid for the selected week, month, or year (enabled by default; appears first unless you change its order).
 - **Ribbon & Command:** Open the dashboard via a ribbon icon or command palette.
 
 ## Installation
@@ -34,6 +36,7 @@ The Daily Note Dashboard Plugin aggregates and visualizes your daily note data, 
 - **Dashboard:** Once activated, the dashboard displays your aggregated data.
 - **Period Dropdowns:** Use the dropdown menus to select the period type (weekly, monthly, yearly) and the specific period you want to view.
 - **Refresh Data:** Click the **Refresh data** button to update the charts with the latest data from your Daily Notes.
+- **Export CSV:** Click the **Export CSV** button to save the currently selected period’s data into your vault (see [CSV Export](#csv-export)).
 
 ### Open the Dashboard
 
@@ -45,6 +48,8 @@ The Daily Note Dashboard Plugin aggregates and visualizes your daily note data, 
 The plugin uses a helper function to parse a date from a daily note's filename. **It assumes that the filename begins with a date in the "YYYY-MM-DD" format.**  
 For example, a file named `2023-04-25 - Daily Note.md` will have its date parsed as April 25, 2023.
 
+Dates are interpreted using your **local calendar day** (not UTC), so week and month grouping stay aligned with the date in the filename.
+
 If a filename does not start with a date in the expected format, the plugin will fall back to using the file's creation time (as recorded in `file.stat.ctime`). This fallback ensures that a date is always available for aggregation, though it may not always reflect the intended note date. For accurate data parsing, please ensure your daily note filenames follow the "YYYY-MM-DD" naming convention.
 
 ## How Periods and Aggregation Work
@@ -52,6 +57,24 @@ If a filename does not start with a date in the expected format, the plugin will
 - **Weekly:** Weeks start on Monday. Sub-periods are days of the week (Mon–Sun). Stacked bars show counts per day with totals in tooltips.
 - **Monthly:** Groups by calendar month (`YYYY-MM`). Sub-periods are week buckets within the month: `Week 1`–`Week 5`.
 - **Yearly:** Groups by year (`YYYY`). Sub-periods are months (`Jan`–`Dec`).
+
+## Activity Heatmap
+
+The activity heatmap visualizes how many tracked checkboxes you completed each day in the selected period. Intensity scales from less to more relative to the busiest day in that period.
+
+- **Weekly:** One cell per day (Mon–Sun).
+- **Monthly:** Calendar grid for the selected month.
+- **Yearly:** GitHub-style week columns for the full year, with month labels.
+
+Each cell shows a tooltip with the date and completion count. A short summary above the grid lists total completions and active days. Toggle visibility and display order under **Chart Visibility** / **Chart Display Order** (defaults to order `0`, so it appears first).
+
+## CSV Export
+
+Use **Export CSV** on the dashboard to write the currently selected period’s aggregated data to your vault.
+
+- **Location:** Files are saved under `Note Metrics Exports/` at the vault root.
+- **Filename:** `note-metrics-{periodType}-{periodKey}.csv` (for example, `note-metrics-monthly-2026-03.csv`). Re-exporting the same period overwrites the existing file.
+- **Contents:** One row per datapoint, including checkboxes (by heading and habit), combo tags, group tags, single tags, emoji tags, and daily activity counts used by the heatmap. Columns: `period_type`, `period`, `data_type`, `heading`, `group`, `item`, `sub_period`, `date`, `count` (unused columns are left blank for a given row type).
 
 ## Checkbox Tracking
 
@@ -136,6 +159,9 @@ The plugin allows you to customize which charts are displayed in the dashboard. 
 9. **Emoji Tags Line Chart:** Display line chart for emoji tags with time on x-axis and amount on y-axis
 10. **Single Tags Line Chart:** Display line chart for single tags with time on x-axis and amount on y-axis
 
+**Heatmap:**
+11. **Activity Heatmap:** GitHub-style calendar heatmap of daily checkbox completions for the selected period (shown by default)
+
 ### How to Configure
 
 1. Go to **Settings** → **Community Plugins** → **Daily Note Dashboard**
@@ -167,6 +193,9 @@ Control the order in which chart sections appear. Lower numbers render first.
 - **Emoji Tags Line Chart Order**: Position of the emoji tags line chart.
 - **Single Tags Line Chart Order**: Position of the single tags line chart.
 
+**Heatmap:**
+- **Activity Heatmap Order**: Position of the activity heatmap (defaults to `0`, so it appears first).
+
 Adjust these under Settings → Chart Display Order.
 
 ## Settings
@@ -184,9 +213,9 @@ Open Obsidian Settings → Community Plugins → Daily Note Dashboard.
     - With `#`: matches the exact level unless you enable the toggle below.
   - Use the **Ignore heading levels** toggle to match headings regardless of level.
 - **Chart Visibility**
-  - Toggle which chart types appear on the dashboard: Checkbox, Combo Tag, Group Tags, Emoji Tags, Single Tags, and their corresponding line chart variants.
+  - Toggle which chart types appear on the dashboard: Checkbox, Combo Tag, Group Tags, Emoji Tags, Single Tags, their corresponding line chart variants, and the Activity Heatmap.
 - **Chart Display Order**
-  - Set numeric order for each chart type (both bar and line charts) to control layout.
+  - Set numeric order for each chart type (bar charts, line charts, and heatmap) to control layout.
 
 ## Customization
 
